@@ -159,7 +159,7 @@ const VehicleMaster: React.FC = () => {
         </div>
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          {summaryCards.map((card, idx) => (
+          {summaryCards.map((card) => (
             <div key={card.label} className="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-3xl">{card.icon}</span>

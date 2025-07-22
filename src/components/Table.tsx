@@ -133,7 +133,7 @@ const Table: React.FC<TableProps> = ({
                 <input type="checkbox" className="accent-primary" />
               </th>
             )}
-            {columns.map((column, index) => (
+            {columns.map((column) => (
               <th 
                 key={column.key} 
                 className="p-4 border-b border-r border-gray-200"

@@ -17,6 +17,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const pageTitle = pageTitles[location.pathname] || '';
 
+
   return (
     <header className="h-20 bg-transparent flex items-center justify-between px-10 border-b border-gray-200 sticky top-0 z-10">
       {/* Page Title */}

@@ -1,4 +1,3 @@
-import React from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
@@ -12,7 +11,7 @@ import LatestActivity from "./pages/LatestActivity";
 import AddUser from "./pages/AddUser";
 import './styles/App.css';
 import AddVehicle from "./pages/AddVehicle";
-import { ToastContainer } from 'react-toastify';
+
 
 const isAuthenticated = () => !!localStorage.getItem('token');
 

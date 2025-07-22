@@ -15,7 +15,6 @@ const TABS = [
 const AddUser: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,7 +45,7 @@ const AddUser: React.FC = () => {
     api.get(`/user/${id}`)
       .then(res => {
         const userData = res.data.data;
-        setUser(userData);
+        // setUser(userData);
         setFullName(userData.name || '');
         setPhone(userData.authRef?.identifier || '');
         setDob(userData.document?.aadhaar?.ocrFront?.dob || '');
@@ -65,7 +64,7 @@ const AddUser: React.FC = () => {
         setPanNumber(userData.document?.pan?.ocr?.panNumber || '');
         setLicenseNumber(userData.document?.dl?.ocrFront?.dlNumber || '');
       })
-      .catch(err => {
+      .catch(() => {
         setError('Failed to fetch user details');
       })
       .finally(() => setLoading(false));

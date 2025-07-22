@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import InputField from '../components/InputField';
 import Button from '../components/Button';
-import { FiFileText, FiTrash2, FiDownload, FiEye } from 'react-icons/fi';
 import {
   useCities,
   useHubs,
@@ -25,11 +24,6 @@ const vehicleTabs = [
   'QR Code'
 ];
 
-const selectOptions = [
-  { label: 'Select', value: '' },
-  { label: 'Option 1', value: 'option1' },
-  { label: 'Option 2', value: 'option2' },
-];
 
 const FileInput: React.FC<{
   label: string;

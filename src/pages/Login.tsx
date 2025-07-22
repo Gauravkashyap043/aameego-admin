@@ -31,6 +31,7 @@ const Login: React.FC = () => {
     try {
       const response = await adminLoginMutation.mutateAsync({ identifier: input, otp });
       if (response?.data?.token) {
+        localStorage.setItem('loginRes', response.data)
         localStorage.setItem('token', response.data.token);
       }
       navigate('/dashboard');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import logo from "../assets/aameego_full_logo.png";
 import { FiActivity, FiDollarSign, FiHome, FiMessageCircle, FiTruck, FiUserCheck, FiUsers } from 'react-icons/fi';
 
@@ -14,6 +14,11 @@ const navItems = [
 ];
 
 const Sidebar: React.FC = () => {
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/');
+  };
   return (
     <aside className="w-60 bg-indigo-600 text-white min-h-screen flex flex-col items-center py-8 fixed left-0 top-0 bottom-0 z-50">
       {/* Logo */}
@@ -21,13 +26,13 @@ const Sidebar: React.FC = () => {
         <img src={logo} alt="Aameego Logo" className="h-10 w-auto" />
       </div>
       {/* Navigation */}
-      <nav className="w-full pl-4">
+      <nav className="w-full pl-4 flex-1">
         {navItems.map(item => (
           <NavLink
             key={item.label}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-4 px-8 py-3 ml-1 font-semibold text-base rounded-l-2xl mb-1 transition-colors cursor-pointer ${isActive ? 'bg-white text-indigo-600' : 'hover:bg-indigo-500'}`
+              `flex items-center gap-4 px-8 py-3 ml-1 font-semibold text-base rounded-l-full mb-1 transition-colors cursor-pointer ${isActive ? 'bg-white text-indigo-600' : 'hover:bg-indigo-500'}`
             }
             end
           >
@@ -36,6 +41,13 @@ const Sidebar: React.FC = () => {
           </NavLink>
         ))}
       </nav>
+      {/* Logout Button */}
+      <button
+        onClick={handleLogout}
+        className="mt-8 mb-2 px-6 py-2 bg-white text-indigo-600 font-semibold rounded-lg shadow hover:bg-indigo-50 transition-colors w-48"
+      >
+        Logout
+      </button>
     </aside>
   );
 };

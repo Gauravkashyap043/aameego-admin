@@ -1,5 +1,6 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React from 'react';
+import type { ReactNode } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/UserManagement";
@@ -10,20 +11,29 @@ import Chat from "./pages/Chat";
 import LatestActivity from "./pages/LatestActivity";
 import AddUser from "./pages/AddUser";
 import './styles/App.css';
+import AddVehicle from "./pages/AddVehicle";
+import { ToastContainer } from 'react-toastify';
+
+const isAuthenticated = () => !!localStorage.getItem('token');
+
+const PrivateRoute = ({ children }: { children: ReactNode }) => {
+  return isAuthenticated() ? children : <Navigate to="/" replace />;
+};
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/user-management" element={<UserManagement />} />
-        <Route path="/admin-users" element={<AdminUsers />} />
-        <Route path="/vehicle-master" element={<VehicleMaster />} />
-        <Route path="/finance" element={<Finance />} />
-        <Route path="/chat" element={<Chat />} />
-        <Route path="/latest-activity" element={<LatestActivity />} />
-        <Route path="/add-user" element={<AddUser />} />
+        <Route path="/" element={isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/user-management" element={<PrivateRoute><UserManagement /></PrivateRoute>} />
+        <Route path="/admin-users" element={<PrivateRoute><AdminUsers /></PrivateRoute>} />
+        <Route path="/vehicle-master" element={<PrivateRoute><VehicleMaster /></PrivateRoute>} />
+        <Route path="/finance" element={<PrivateRoute><Finance /></PrivateRoute>} />
+        <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
+        <Route path="/latest-activity" element={<PrivateRoute><LatestActivity /></PrivateRoute>} />
+        <Route path="/add-user/:id" element={<PrivateRoute><AddUser /></PrivateRoute>} />
+        <Route path="/add-vehicle" element={<PrivateRoute><AddVehicle /></PrivateRoute>} />
       </Routes>
     </Router>
   );

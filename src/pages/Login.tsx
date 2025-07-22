@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/aameego_full_logo.png";
+import { useAdminLogin } from '../hooks/useAuth';
 
 const Login: React.FC = () => {
   const [step, setStep] = React.useState<'input' | 'otp'>('input');
@@ -9,22 +10,36 @@ const Login: React.FC = () => {
   const [error, setError] = React.useState('');
   const navigate = useNavigate();
 
-  const handleRequestOtp = () => {
-    if (input) {
-      setStep('otp');
-      setError('');
-    } else {
+  const adminLoginMutation = useAdminLogin();
+
+  const handleRequestOtp = async () => {
+    if (!input) {
       setError('Please enter your phone or email');
+      return;
+    }
+    setError('');
+    // For admin login, just go to OTP step (no register API call)
+    setStep('otp');
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp) {
+      setError('Please enter the OTP');
+      return;
+    }
+    setError('');
+    try {
+      const response = await adminLoginMutation.mutateAsync({ identifier: input, otp });
+      if (response?.data?.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || 'Failed to verify OTP');
     }
   };
 
-  const handleVerifyOtp = () => {
-    if (otp === '0000') {
-      navigate('/dashboard');
-    } else {
-      setError('Invalid OTP');
-    }
-  };
+  const loading = adminLoginMutation.isPending;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-indigo-100">
@@ -49,8 +64,9 @@ const Login: React.FC = () => {
               <button
                 onClick={handleRequestOtp}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition-colors shadow"
+                disabled={loading}
               >
-                Request OTP
+                {loading ? 'Loading...' : 'Request OTP'}
               </button>
             </>
           ) : (
@@ -66,8 +82,9 @@ const Login: React.FC = () => {
               <button
                 onClick={handleVerifyOtp}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition-colors shadow"
+                disabled={loading}
               >
-                Verify OTP
+                {loading ? 'Verifying...' : 'Verify OTP'}
               </button>
             </>
           )}

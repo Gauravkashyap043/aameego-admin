@@ -4,6 +4,7 @@ import Table from '../components/Table';
 import Button from '../components/Button';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleList } from '../hooks/useVehicles';
+import QRCode from 'react-qr-code';
 
 const summaryCards = [
   {
@@ -52,6 +53,8 @@ const VehicleMaster: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const navigate = useNavigate();
   const [actionDropdown, setActionDropdown] = useState<string | null>(null);
+  const [qrVehicleId, setQrVehicleId] = useState<string | null>(null);
+  const qrRef = React.useRef<HTMLDivElement>(null);
 
   const { data: vehicles = [], isLoading: loadingVehicles } = useVehicleList();
 
@@ -107,19 +110,19 @@ const VehicleMaster: React.FC = () => {
             <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg z-10">
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-indigo-50"
-                onClick={() => { /* handle view */ setActionDropdown(null); }}
+                onClick={() => { navigate(`/add-vehicle/${record.id}`); setActionDropdown(null); }}
               >
                 View
               </button>
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-indigo-50"
-                onClick={() => { /* handle edit */ setActionDropdown(null); }}
+                onClick={() => { navigate(`/add-vehicle/${record.id}`); setActionDropdown(null); }}
               >
                 Edit
               </button>
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-indigo-50"
-                onClick={() => { /* handle download QR */ setActionDropdown(null); }}
+                onClick={() => { handleDownloadQR(record.id); setActionDropdown(null); }}
               >
                 Download QR
               </button>
@@ -146,8 +149,41 @@ const VehicleMaster: React.FC = () => {
     deliveryDate: v.deliveryDate,
   }));
 
+  // Download QR code handler
+  const handleDownloadQR = (vehicleId: string) => {
+    setQrVehicleId(vehicleId);
+    setTimeout(() => {
+      const svg = qrRef.current?.querySelector('svg');
+      if (!svg) return;
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svg);
+      const canvas = document.createElement('canvas');
+      const img = new window.Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const pngFile = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pngFile;
+          downloadLink.download = `vehicle-qr-${vehicleId}.png`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        }
+      };
+      img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
+    }, 100); // Wait for QR to render
+  };
+
   return (
     <Layout>
+      {/* Hidden QR code renderer for download */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }} ref={qrRef}>
+        {qrVehicleId && <QRCode value={qrVehicleId} size={256} />}
+      </div>
       <div className="min-h-screen bg-[#f6f7ff] p-8">
         {/* Page Title */}
         <div className="flex items-center justify-between mb-4">

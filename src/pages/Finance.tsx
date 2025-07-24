@@ -1,10 +1,15 @@
 import React from 'react';
 import Layout from '../components/Layout';
+import ComingSoon from '../components/ComingSoon';
 
 const Finance: React.FC = () => (
   <Layout>
-    <div className="p-8 text-2xl font-bold">This is Finance Page</div>
+    <ComingSoon 
+      title="Finance Dashboard Coming Soon" 
+      message="We're building a comprehensive finance dashboard to help you track payments, revenue, and financial metrics."
+      icon="alert"
+    />
   </Layout>
 );
 
-export default Finance; 
+export default Finance;

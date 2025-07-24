@@ -18,4 +18,13 @@ export const useVehicleList = () => {
       return res.data.data;
     },
   });
+};
+
+export const useUpdateVehicle = () => {
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: any }) => {
+      const res = await api.put(`/vehicle/${id}`, data);
+      return res.data;
+    },
+  });
 }; 

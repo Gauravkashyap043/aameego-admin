@@ -31,8 +31,10 @@ const Login: React.FC = () => {
     try {
       const response = await adminLoginMutation.mutateAsync({ identifier: input, otp });
       if (response?.data?.token) {
-        localStorage.setItem('loginRes', response.data)
+        localStorage.setItem('loginRes', JSON.stringify(response));
         localStorage.setItem('token', response.data.token);
+        localStorage.setItem('userName', response.data.user.name);
+        localStorage.setItem('userRole', response.data.user.role.roleName);
       }
       navigate('/dashboard');
     } catch (err: any) {
@@ -95,4 +97,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login; 
+export default Login;

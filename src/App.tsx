@@ -11,6 +11,7 @@ import LatestActivity from "./pages/LatestActivity";
 import AddUser from "./pages/AddUser";
 import './styles/App.css';
 import AddVehicle from "./pages/AddVehicle";
+import VehicleQR from "./pages/VehicleQR";
 
 
 const isAuthenticated = () => !!localStorage.getItem('token');
@@ -33,6 +34,8 @@ function App() {
         <Route path="/latest-activity" element={<PrivateRoute><LatestActivity /></PrivateRoute>} />
         <Route path="/add-user/:id" element={<PrivateRoute><AddUser /></PrivateRoute>} />
         <Route path="/add-vehicle" element={<PrivateRoute><AddVehicle /></PrivateRoute>} />
+        <Route path="/add-vehicle/:id" element={<PrivateRoute><AddVehicle /></PrivateRoute>} />
+        <Route path="/vehicle-qr/:vehicleId" element={<PrivateRoute><VehicleQR /></PrivateRoute>} />
       </Routes>
     </Router>
   );

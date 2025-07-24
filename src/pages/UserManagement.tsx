@@ -4,6 +4,9 @@ import Table from '../components/Table';
 import type { Column } from '../components/Table';
 import { useRidersAndSupervisors } from '../hooks/useUsers';
 import { useNavigate } from 'react-router-dom';
+import Button from '../components/Button';
+import InputField from '../components/InputField';
+import Modal from '../components/Modal';
 
 const TABS = [
   { label: 'Supervisor', value: 'supervisor' },
@@ -15,6 +18,12 @@ const UserManagement: React.FC = () => {
   const { data, isLoading, error } = useRidersAndSupervisors();
   const navigate = useNavigate();
   const [actionDropdown, setActionDropdown] = useState<string | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignForm, setAssignForm] = useState({
+    riderProfileCode: '',
+    supervisorId: '',
+  });
+  const [assignError, setAssignError] = useState('');
 
   const tableData = activeTab === 'supervisor' ? data?.supervisors : data?.riders;
 
@@ -41,6 +50,29 @@ const UserManagement: React.FC = () => {
   const handleDeactivate = (id: string) => {
     // TODO: Implement deactivate logic
     alert('Deactivate user: ' + id);
+  };
+
+  const supervisorOptions = (data?.supervisors || []).map((sup: any) => ({
+    label: sup.name + (sup.profileCode ? ` (${sup.profileCode})` : ''),
+    value: sup._id,
+  }));
+
+  const handleAssignChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setAssignForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAssignSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement assign supervisor logic
+    if (!assignForm.riderProfileCode || !assignForm.supervisorId) {
+      setAssignError('Both fields are required');
+      return;
+    }
+    setAssignError('');
+    alert(`Assign supervisor ${assignForm.supervisorId} to rider ${assignForm.riderProfileCode}`);
+    setShowAssignModal(false);
+    setAssignForm({ riderProfileCode: '', supervisorId: '' });
   };
 
   const columns: Column[] = [
@@ -163,15 +195,50 @@ const UserManagement: React.FC = () => {
             columns={columns}
             data={formatTableData(tableData)}
             isLoading={isLoading}
-            actionButtonLabel={activeTab === 'supervisor' ? '+ Add Supervisor' : '+ Add Rider'}
+            actionButtonLabel="Assign Supervisor"
             actionButtonLoading={false}
-            onActionButtonClick={() => console.log(`Add ${activeTab === 'supervisor' ? 'Supervisor' : 'Rider'}`)}
+            onActionButtonClick={() => setShowAssignModal(true)}
             showCheckbox={true}
             showSearch={true}
             searchPlaceholder="Search by name or phone"
             statusFilter={true}
           />
         )}
+        {/* Assign Supervisor Modal */}
+        <Modal
+          open={showAssignModal}
+          onClose={() => setShowAssignModal(false)}
+          title="Assign Supervisor to Rider"
+        >
+          <form onSubmit={handleAssignSubmit} className="flex flex-col gap-4">
+            <InputField
+              label="Rider Profile Code"
+              name="riderProfileCode"
+              value={assignForm.riderProfileCode}
+              onChange={handleAssignChange}
+              placeholder="Enter Rider Profile Code"
+              required
+            />
+            <InputField
+              label="Select Supervisor"
+              name="supervisorId"
+              type="select"
+              value={assignForm.supervisorId}
+              onChange={handleAssignChange}
+              options={supervisorOptions}
+              required
+            />
+            {assignError && <div className="text-red-500 text-sm">{assignError}</div>}
+            <div className="flex gap-2 justify-end mt-2">
+              <Button variant="secondary" type="button" onClick={() => setShowAssignModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit">
+                Assign
+              </Button>
+            </div>
+          </form>
+        </Modal>
       </div>
     </Layout>
   );

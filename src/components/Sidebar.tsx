@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import logo from "../assets/aameego_full_logo.png";
 import { FiActivity, FiDollarSign, FiHome, FiMessageCircle, FiTruck, FiUserCheck, FiUsers } from 'react-icons/fi';
 
@@ -14,11 +14,13 @@ const navItems = [
 ];
 
 const Sidebar: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.removeItem('token');
-    navigate('/');
+    localStorage.clear();
+    window.location.href = '/';
   };
+
   return (
     <aside className="w-60 bg-indigo-600 text-white min-h-screen flex flex-col items-center py-8 fixed left-0 top-0 bottom-0 z-50">
       {/* Logo */}

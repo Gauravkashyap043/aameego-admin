@@ -17,6 +17,41 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const pageTitle = pageTitles[location.pathname] || '';
 
+  const [userName, setUserName] = React.useState<string>('');
+  const [userRole, setUserRole] = React.useState<string>('');
+  const [userInitial, setUserInitial] = React.useState<string>('');
+
+  React.useEffect(() => {
+    try {
+      const storedName = localStorage.getItem('userName');
+      const storedRole = localStorage.getItem('userRole');
+      const token = localStorage.getItem('token');
+      
+      // Only set user data if token exists (user is logged in)
+      if (token) {
+        if (storedName) {
+          setUserName(storedName);
+          setUserInitial(storedName.charAt(0));
+        }
+
+        if (storedRole) {
+          setUserRole(storedRole);
+        }
+      } else {
+        // If no token, reset user data
+        setUserName('');
+        setUserRole('');
+        setUserInitial('');
+      }
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      // Reset user data on error
+      setUserName('');
+      setUserRole('');
+      setUserInitial('');
+    }
+  }, []);
+
 
   return (
     <header className="h-20 bg-transparent flex items-center justify-between px-10 border-b border-gray-200 sticky top-0 z-10">
@@ -34,11 +69,11 @@ const Navbar: React.FC = () => {
         {/* User Info */}
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-indigo-600 font-semibold text-base leading-tight">Nabila A.</div>
-            <div className="text-indigo-300 text-xs leading-tight">Admin</div>
+            <div className="text-indigo-600 font-semibold text-base leading-tight">{userName || 'User'}</div>
+            <div className="text-indigo-300 text-xs leading-tight">{userRole || 'Admin'}</div>
           </div>
           <div className="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center font-bold text-indigo-600 text-lg">
-            N
+            {userInitial || 'U'}
           </div>
         </div>
       </div>
@@ -46,4 +81,4 @@ const Navbar: React.FC = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

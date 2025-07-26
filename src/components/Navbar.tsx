@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiBell, FiSettings } from 'react-icons/fi';
 import { useLocation } from 'react-router-dom';
 
@@ -20,13 +20,22 @@ const Navbar: React.FC = () => {
   const [userName, setUserName] = React.useState<string>('');
   const [userRole, setUserRole] = React.useState<string>('');
   const [userInitial, setUserInitial] = React.useState<string>('');
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
     try {
       const storedName = localStorage.getItem('userName');
       const storedRole = localStorage.getItem('userRole');
       const token = localStorage.getItem('token');
-      
+
       // Only set user data if token exists (user is logged in)
       if (token) {
         if (storedName) {
@@ -54,7 +63,7 @@ const Navbar: React.FC = () => {
 
 
   return (
-    <header className="h-20 bg-transparent flex items-center justify-between px-10 border-b border-gray-200 sticky top-0 z-10">
+    <header className={`h-20 bg-transparent flex items-center justify-between px-10 border-b border-gray-200 sticky top-0 z-10 transition-colors duration-300 ${isScrolled ? 'bg-white shadow' : 'bg-transparent'}`}>
       {/* Page Title */}
       <div className="text-2xl font-bold text-indigo-700">{pageTitle}</div>
       <div className="flex items-center gap-6">

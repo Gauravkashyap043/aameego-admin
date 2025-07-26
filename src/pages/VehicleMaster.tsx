@@ -5,36 +5,37 @@ import Button from '../components/Button';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleList } from '../hooks/useVehicles';
 import QRCode from 'react-qr-code';
+import { FiTruck, FiFileText, FiPackage, FiTool, FiAlertTriangle } from 'react-icons/fi';
 
 const summaryCards = [
   {
     label: 'Total Vehicles',
-    value: '2,000',
-    icon: '🚗',
+    value: '_',
+    icon: <FiTruck className="w-6 h-6" />,
     link: 'View List',
   },
   {
     label: 'Vehicles Rented',
-    value: '450',
-    icon: '📄',
+    value: '_',
+    icon: <FiFileText className="w-6 h-6" />,
     link: 'View all orders',
   },
   {
     label: 'Accessories',
-    value: '560',
-    icon: '🛵',
+    value: '_',
+    icon: <FiPackage className="w-6 h-6" />,
     link: 'View List',
   },
   {
     label: 'Rented Accessories',
-    value: '160',
-    icon: '🧰',
+    value: '_',
+    icon: <FiTool className="w-6 h-6" />,
     link: 'View List',
   },
   {
     label: 'Documents Expired',
-    value: '560',
-    icon: '📑',
+    value: '_',
+    icon: <FiAlertTriangle className="w-6 h-6" />,
     link: 'View List',
   },
 ];
@@ -198,7 +199,7 @@ const VehicleMaster: React.FC = () => {
           {summaryCards.map((card) => (
             <div key={card.label} className="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-3xl">{card.icon}</span>
+                <div className="text-gray-600">{card.icon}</div>
                 <span className="text-lg font-semibold">{card.value}</span>
               </div>
               <div className="text-xs text-gray-500 font-medium">{card.label}</div>

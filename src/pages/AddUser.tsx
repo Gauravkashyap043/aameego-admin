@@ -4,15 +4,18 @@ import Button from '../components/Button';
 import Layout from '../components/Layout';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { FiTrash2, FiDownload, FiEye } from 'react-icons/fi';
+import { FiDownload, FiEye } from 'react-icons/fi';
 import Modal from '../components/Modal';
 import ComingSoon from '../components/ComingSoon';
+import { useUpdateUserPersonalDetails, useUpdateDocument, useUpdateUserStatus } from '../hooks/useUpdateUser';
+import { toast } from 'react-toastify';
+import { formatDateForInput, formatDateForBackend } from '../utils/dateUtils';
 
 const TABS = [
   'Personal information',
   'Bank Details',
-  'Vehicle Details',
   'Documents',
+  'Vehicle Details',
 ];
 
 const AddUser: React.FC = () => {
@@ -22,7 +25,18 @@ const AddUser: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+
+  // Add the new hooks
+  const updateUserPersonalDetails = useUpdateUserPersonalDetails();
+  const updateDocument = useUpdateDocument();
+  const updateUserStatus = useUpdateUserStatus();
+
+  // Add state for rejection/deactivation
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [deactivateReason, setDeactivateReason] = useState('');
+  const [isRejecting, setIsRejecting] = useState(false);
 
   // Form fields
   const [fullName, setFullName] = useState('');
@@ -84,6 +98,50 @@ const AddUser: React.FC = () => {
     documents: false
   });
 
+  // Helper function to normalize file for FormData
+  const normalizeFile = (file: File | null) => {
+    if (!file) return null;
+    return file;
+  };
+
+  // Handle status updates (reject/deactivate)
+  const handleStatusUpdate = (status: 'rejected' | 'deactived', reason: string) => {
+    if (!id) return;
+
+    setIsRejecting(true);
+
+    updateUserStatus.mutate(
+      { userId: String(id), data: { status } },
+      {
+        onSuccess: () => {
+          setIsRejecting(false);
+          const actionText = status === 'rejected' ? 'Rejected' : 'Deactivated';
+          toast.success(`User ${actionText} - User status has been updated to ${status}.${reason ? ` Reason: ${reason}` : ''}`);
+          // Clear reasons
+          setRejectionReason('');
+          setDeactivateReason('');
+          // Close modals
+          setShowRejectModal(false);
+          setShowDeactivateModal(false);
+          // Navigate back to user list
+          navigate('/user-management');
+        },
+        onError: (error) => {
+          setIsRejecting(false);
+          toast.error(`Failed to update user status: ${error.message}`);
+        },
+      }
+    );
+  };
+
+  const handleConfirmReject = () => {
+    handleStatusUpdate('rejected', rejectionReason);
+  };
+
+  const handleConfirmDeactivate = () => {
+    handleStatusUpdate('deactived', deactivateReason);
+  };
+
   // Validation functions
   const validatePersonalInfo = () => {
     if (!fullName.trim()) {
@@ -102,8 +160,24 @@ const AddUser: React.FC = () => {
       setError('Gender is required');
       return false;
     }
+    if (!father.trim()) {
+      setError('Father\'s name is required');
+      return false;
+    }
+    if (!city.trim()) {
+      setError('City/District is required');
+      return false;
+    }
     if (!address.trim()) {
       setError('Address is required');
+      return false;
+    }
+    if (!pin.trim()) {
+      setError('PIN code is required');
+      return false;
+    }
+    if (!state.trim()) {
+      setError('State is required');
       return false;
     }
     setError('');
@@ -121,6 +195,10 @@ const AddUser: React.FC = () => {
     }
     if (!accountNumber.trim()) {
       setError('Account number is required');
+      return false;
+    }
+    if (!confirmAccountNumber.trim()) {
+      setError('Confirm account number is required');
       return false;
     }
     if (accountNumber !== confirmAccountNumber) {
@@ -161,7 +239,7 @@ const AddUser: React.FC = () => {
         // setUser(userData);
         setFullName(userData.name || '');
         setPhone(userData.authRef?.identifier || '');
-        setDob(userData.document?.aadhaar?.ocrFront?.dob || '');
+        setDob(formatDateForInput(userData.document?.aadhaar?.ocrFront?.dob || ''));
         setGender(userData.document?.aadhaar?.ocrFront?.gender || '');
         setFather(userData.document?.aadhaar?.ocrFront?.rawText?.split(',')[0] || '');
         setAddress(userData.document?.aadhaar?.ocrFront?.rawText || '');
@@ -273,7 +351,7 @@ const AddUser: React.FC = () => {
   };
 
   // Save personal information
-  const handleSavePersonalInfo = async () => {
+  const handleSavePersonalInfo = () => {
     if (!id) return;
 
     if (!validatePersonalInfo()) {
@@ -281,48 +359,40 @@ const AddUser: React.FC = () => {
     }
 
     setSaving(true);
-    try {
-      const personalData = {
-        name: fullName,
-        // Add other personal fields as needed
-      };
 
-      await api.put(`/user/${id}`, personalData);
+    const personalData = {
+      fullName: fullName,
+      dob: formatDateForBackend(dob),
+      gender: gender.toLowerCase(),
+      fatherName: father,
+      address: {
+        address: address,
+        cityDistrict: city,
+        pinCode: pin,
+      },
+    };
 
-      // Update document with personal info
-      const documentData = {
-        aadhaar: {
-          ocrFront: {
-            name: fullName,
-            dob: dob,
-            gender: gender,
-            aadharNumber: aadhaarNumber,
-            rawText: `${father}, ${address}, ${city}, ${state} - ${pin}`
-          }
-        }
-      };
-
-      await api.put(`/document/user/${id}`, documentData);
-
-      // Upload any files that were selected
-      await uploadFiles();
-
-      setHasChanges(prev => ({ ...prev, personal: false }));
-      setSuccessMessage('Personal information saved successfully!');
-      setTimeout(() => {
-        setSuccessMessage('');
-        setActiveTab(1); // Move to next tab
-      }, 2000);
-    } catch (error) {
-      console.error('Error saving personal info:', error);
-      setError('Failed to save personal information');
-    } finally {
-      setSaving(false);
-    }
+    updateUserPersonalDetails.mutate(
+      { userId: String(id), data: personalData },
+      {
+        onSuccess: () => {
+          setSaving(false);
+          toast.success('Personal information updated successfully!');
+          setHasChanges(prev => ({ ...prev, personal: false }));
+          setTimeout(() => {
+            setActiveTab(1); // Move to next tab
+          }, 2000);
+        },
+        onError: (error) => {
+          setSaving(false);
+          toast.error(`Failed to save personal information: ${error.message}`);
+        },
+      }
+    );
   };
 
   // Save bank details
-  const handleSaveBankDetails = async () => {
+  const handleSaveBankDetails = () => {
     if (!id) return;
 
     if (!validateBankDetails()) {
@@ -330,42 +400,57 @@ const AddUser: React.FC = () => {
     }
 
     setSaving(true);
-    try {
-      const bankData = {
-        bank: {
-          details: {
-            bankName: bankName,
-            holderName: bankFullName,
-            accountNumber: accountNumber,
-            ifsc: ifsc
-          }
-        }
-      };
 
-      await api.put(`/document/user/${id}`, bankData);
+    const formData = new FormData();
 
-      // Upload any bank files that were selected
-      await uploadFiles();
-
-      setHasChanges(prev => ({ ...prev, bank: false }));
-      setSuccessMessage('Bank details saved successfully!');
-      setTimeout(() => {
-        setSuccessMessage('');
-        setActiveTab(2); // Move to next tab
-      }, 2000);
-    } catch (error) {
-      console.error('Error saving bank details:', error);
-      setError('Failed to save bank details');
-    } finally {
-      setSaving(false);
+    const passbook = normalizeFile(passbookFile);
+    if (passbook) {
+      formData.append('passbook', passbook);
     }
+
+    const cheque = normalizeFile(chequeFile);
+    if (cheque) {
+      formData.append('cheque', cheque);
+    }
+
+    formData.append(
+      'bank',
+      JSON.stringify({
+        details: {
+          bankName,
+          holderName: bankFullName,
+          accountNumber,
+          ifsc,
+        },
+      })
+    );
+
+    formData.append('type', 'bank');
+
+    updateDocument.mutate(
+      { userId: String(id), formData },
+      {
+        onSuccess: () => {
+          setSaving(false);
+          toast.success('Bank details updated successfully!');
+          setHasChanges(prev => ({ ...prev, bank: false }));
+          setTimeout(() => {
+            setActiveTab(2); // Move to next tab
+          }, 2000);
+        },
+        onError: (error: Error) => {
+          setSaving(false);
+          toast.error(`Failed to save bank details: ${error.message}`);
+        },
+      }
+    );
   };
 
   // Save vehicle details
  
 
   // Save and verify all documents
-  const handleSaveAndVerify = async () => {
+  const handleSaveAndVerify = () => {
     if (!id) return;
 
     if (!validateDocuments()) {
@@ -373,140 +458,105 @@ const AddUser: React.FC = () => {
     }
 
     setSaving(true);
-    try {
-      // Prepare document data and verification status
-      const documentData = {
-        aadhaar: {
-          ocrFront: {
-            name: fullName,
-            dob: dob,
-            gender: gender,
-            aadharNumber: aadhaarNumber,
-            rawText: `${father}, ${address}, ${city}, ${state} - ${pin}`
-          }
-        },
-        pan: {
-          ocr: {
-            panNumber: panNumber
-          }
-        },
-        dl: {
-          ocrFront: {
-            dlNumber: licenseNumber
-          }
-        },
-        bank: {
-          details: {
-            bankName: bankName,
-            holderName: bankFullName,
-            accountNumber: accountNumber,
-            ifsc: ifsc
-          }
-        },
-        isVerified: true
-      };
 
-      // Update document data and verification status in one call
-      await api.put(`/document/user/${id}`, documentData);
-
-      // Upload any files that were selected
-      await uploadFiles();
-
-      setHasChanges(prev => ({ ...prev, documents: false }));
-      setError('');
-      setSuccessMessage('User verified successfully!');
-      setTimeout(() => {
-        setSuccessMessage('');
-        navigate('/user-management'); // Redirect to user list
-      }, 2000);
-    } catch (error) {
-      console.error('Error saving and verifying:', error);
-      setError('Failed to save and verify documents');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Handle file uploads
-  const uploadFiles = async () => {
     const formData = new FormData();
-    
-    if (aadhaarFile) formData.append('aadhaarFront', aadhaarFile);
-    if (panFile) formData.append('pan', panFile);
-    if (licenseFrontFile) formData.append('dlFront', licenseFrontFile);
-    if (licenseBackFile) formData.append('dlBack', licenseBackFile);
-    if (passbookFile) formData.append('passbook', passbookFile);
-    if (chequeFile) formData.append('cheque', chequeFile);
-    
-    if (formData.has('aadhaarFront') || formData.has('pan') || formData.has('dlFront') || 
-        formData.has('dlBack') || formData.has('passbook') || formData.has('cheque')) {
-      try {
-        await api.post('/document/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-      } catch (error) {
-        console.error('Error uploading files:', error);
-        setError('Failed to upload some files');
-      }
+
+    // Aadhaar
+    const aadhaarFront = normalizeFile(aadhaarFile);
+    if (aadhaarFront) {
+      formData.append('aadhaarFront', aadhaarFront);
     }
+
+    const aadhaarBack = normalizeFile(aadhaarFile); // Using same file for back for now
+    if (aadhaarBack) {
+      formData.append('aadhaarBack', aadhaarBack);
+    }
+
+    formData.append(
+      'aadhaar',
+      JSON.stringify({
+        ocrFront: {
+          aadharNumber: aadhaarNumber,
+          name: fullName,
+          dob: formatDateForBackend(dob),
+          rawText: address,
+          gender: gender.toLowerCase(),
+        },
+        ocrBack: {
+          aadharNumber: aadhaarNumber,
+        },
+      })
+    );
+
+    // PAN
+    const pan = normalizeFile(panFile);
+    if (pan) {
+      formData.append('pan', pan);
+    }
+    formData.append(
+      'pan',
+      JSON.stringify({
+        ocr: {
+          panNumber: panNumber,
+        },
+      })
+    );
+
+    // DL
+    const dlFront = normalizeFile(licenseFrontFile);
+    if (dlFront) {
+      formData.append('dlFront', dlFront);
+    }
+    const dlBack = normalizeFile(licenseBackFile);
+    if (dlBack) {
+      formData.append('dlBack', dlBack);
+    }
+    formData.append(
+      'dl',
+      JSON.stringify({
+        ocrFront: {
+          dlNumber: licenseNumber,
+          name: fullName || '',
+          dob: formatDateForBackend(dob) || '',
+          rawText: address,
+        },
+        ocrBack: {
+          rawText: address,
+        },
+      })
+    );
+
+    formData.append('type', 'documents');
+
+    updateDocument.mutate(
+      { userId: String(id), formData },
+      {
+        onSuccess: () => {
+          setSaving(false);
+          toast.success('Documents updated successfully!');
+          setHasChanges(prev => ({ ...prev, documents: false }));
+          setTimeout(() => {
+            navigate('/user-management'); // Redirect to user list
+          }, 2000);
+        },
+        onError: (error: Error) => {
+          setSaving(false);
+          toast.error(`Failed to save documents: ${error.message}`);
+        },
+      }
+    );
   };
+
+
 
   // Handle reject
-  const handleReject = async () => {
-    if (!id) return;
-
-    try {
-      // Only use document endpoint for rejection
-      await api.put(`/document/user/${id}`, { isVerified: false });
-      setSuccessMessage('User rejected successfully!');
-      setTimeout(() => {
-        setSuccessMessage('');
-        navigate('/user-management');
-      }, 2000);
-    } catch (error) {
-      console.error('Error rejecting user:', error);
-      setError('Failed to reject user');
-    }
+  const handleReject = () => {
+    setShowRejectModal(true);
   };
 
-  // File deletion handlers
-  const handleDeleteAadhaar = () => {
-    setAadhaarFile(null);
-    setAadhaarPreview(null);
-    setHasChanges(prev => ({ ...prev, documents: true }));
-  };
-
-  const handleDeletePan = () => {
-    setPanFile(null);
-    setPanPreview(null);
-    setHasChanges(prev => ({ ...prev, documents: true }));
-  };
-
-  const handleDeleteLicenseFront = () => {
-    setLicenseFrontFile(null);
-    setLicenseFrontPreview(null);
-    setHasChanges(prev => ({ ...prev, documents: true }));
-  };
-
-  const handleDeleteLicenseBack = () => {
-    setLicenseBackFile(null);
-    setLicenseBackPreview(null);
-    setHasChanges(prev => ({ ...prev, documents: true }));
-  };
-
-  // Bank document deletion handlers
-  const handleDeletePassbook = () => {
-    setPassbookFile(null);
-    setPassbookPreview(null);
-    setHasChanges(prev => ({ ...prev, bank: true }));
-  };
-
-  const handleDeleteCheque = () => {
-    setChequeFile(null);
-    setChequePreview(null);
-    setHasChanges(prev => ({ ...prev, bank: true }));
+  // Handle deactivate
+  const handleDeactivate = () => {
+    setShowDeactivateModal(true);
   };
 
   // Check if current tab has unsaved changes
@@ -566,8 +616,6 @@ const AddUser: React.FC = () => {
               <div className="text-center text-indigo-600">Loading...</div>
             ) : error ? (
               <div className="text-center text-red-500 mb-4">{error}</div>
-            ) : successMessage ? (
-              <div className="text-center text-green-600 mb-4">{successMessage}</div>
             ) : null}
             {!loading && (
               <>
@@ -575,19 +623,27 @@ const AddUser: React.FC = () => {
                   <div>
                     <div className="text-xl font-semibold mb-4">Personal Details</div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <InputField label="Full Name" value={fullName} onChange={e => { setFullName(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter full name" />
-                      <InputField label="Phone Number" value={phone} onChange={e => { setPhone(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter phone number" />
-                      <InputField label="Date Of Birth" value={dob} onChange={e => { setDob(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="date" />
-                      <InputField label="Gender" value={gender} onChange={e => { setGender(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="select" options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }]} />
-                      <InputField label="Fathers Name" value={father} onChange={e => { setFather(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter father's name" />
-                      <InputField label="City/District" value={city} onChange={e => { setCity(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter city/district" />
-                      <InputField label="Address" value={address} onChange={e => { setAddress(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="textarea" placeholder="Enter address" className="md:col-span-3" />
-                      <InputField label="PIN Code" value={pin} onChange={e => { setPin(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter PIN code" />
-                      <InputField label="State" value={state} onChange={e => { setState(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter state" />
+                      <InputField label="Full Name" value={fullName} onChange={e => { setFullName(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter full name" required />
+                      <InputField label="Phone Number" value={phone} onChange={e => { setPhone(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter phone number" required />
+                      <InputField label="Date Of Birth" value={dob} onChange={e => { setDob(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="date" required />
+                      <InputField label="Gender" value={gender} onChange={e => { setGender(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="select" options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }]} required />
+                      <InputField label="Fathers Name" value={father} onChange={e => { setFather(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter father's name" required />
+                      <InputField label="City/District" value={city} onChange={e => { setCity(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter city/district" required />
+                      <InputField label="Address" value={address} onChange={e => { setAddress(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="textarea" placeholder="Enter address" className="md:col-span-3" required />
+                      <InputField label="PIN Code" value={pin} onChange={e => { setPin(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter PIN code" required />
+                      <InputField label="State" value={state} onChange={e => { setState(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter state" required />
                     </div>
                     <div className="flex mt-8 space-x-4">
-                      <Button variant="danger" onClick={handleReject} disabled={saving}>Reject</Button>
-                      <Button variant="primary" onClick={handleSavePersonalInfo} disabled={saving}>
+                      {fetchedUser?.status === 'verified' ? (
+                        <Button variant="danger" onClick={handleDeactivate} disabled={saving || isRejecting}>
+                          {isRejecting ? 'Deactivating...' : 'Deactivate'}
+                        </Button>
+                      ) : (
+                        <Button variant="danger" onClick={handleReject} disabled={saving || isRejecting}>
+                          {isRejecting ? 'Rejecting...' : 'Reject'}
+                        </Button>
+                      )}
+                      <Button variant="primary" onClick={handleSavePersonalInfo} disabled={saving || isRejecting}>
                         {saving ? 'Saving...' : 'Save & Next'}
                       </Button>
                     </div>
@@ -597,11 +653,11 @@ const AddUser: React.FC = () => {
                   <div>
                     <div className="text-xl font-semibold mb-4">Bank Details</div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <InputField label="Bank Name" value={bankName} onChange={e => { setBankName(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter bank name" />
-                      <InputField label="Full Name" value={bankFullName} onChange={e => { setBankFullName(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter account holder name" />
-                      <InputField label="Account Number" value={accountNumber} onChange={e => { setAccountNumber(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter account number" />
-                      <InputField label="Confirm Account Number" value={confirmAccountNumber} onChange={e => { setConfirmAccountNumber(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Re-enter account number" />
-                      <InputField label="IFSC Code" value={ifsc} onChange={e => { setIfsc(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter IFSC code" />
+                      <InputField label="Bank Name" value={bankName} onChange={e => { setBankName(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter bank name" required />
+                      <InputField label="Full Name" value={bankFullName} onChange={e => { setBankFullName(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter account holder name" required />
+                      <InputField label="Account Number" value={accountNumber} onChange={e => { setAccountNumber(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter account number" required />
+                      <InputField label="Confirm Account Number" value={confirmAccountNumber} onChange={e => { setConfirmAccountNumber(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Re-enter account number" required />
+                      <InputField label="IFSC Code" value={ifsc} onChange={e => { setIfsc(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter IFSC code" required />
                     </div>
                     {/* Uploaded Documents */}
                     <div className="mt-8">
@@ -626,7 +682,7 @@ const AddUser: React.FC = () => {
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
-                              <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePassbook}><FiTrash2 /></button>
+                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePassbook}><FiTrash2 /></button> */}
                               <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: passbookPreview?.url, type: passbookPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: passbookPreview?.url, type: passbookPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
@@ -651,7 +707,7 @@ const AddUser: React.FC = () => {
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
-                              <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteCheque}><FiTrash2 /></button>
+                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteCheque}><FiTrash2 /></button> */}
                               <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: chequePreview?.url, type: chequePreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: chequePreview?.url, type: chequePreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
@@ -670,8 +726,16 @@ const AddUser: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex mt-8 space-x-4">
-                      <Button variant="danger" onClick={handleReject} disabled={saving}>Reject</Button>
-                      <Button variant="primary" onClick={handleSaveBankDetails} disabled={saving}>
+                      {fetchedUser?.status === 'verified' ? (
+                        <Button variant="danger" onClick={handleDeactivate} disabled={saving || isRejecting}>
+                          {isRejecting ? 'Deactivating...' : 'Deactivate'}
+                        </Button>
+                      ) : (
+                        <Button variant="danger" onClick={handleReject} disabled={saving || isRejecting}>
+                          {isRejecting ? 'Rejecting...' : 'Reject'}
+                        </Button>
+                      )}
+                      <Button variant="primary" onClick={handleSaveBankDetails} disabled={saving || isRejecting}>
                         {saving ? 'Saving...' : 'Save & Next'}
                       </Button>
                     </div>
@@ -679,15 +743,10 @@ const AddUser: React.FC = () => {
                 )}
                 {activeTab === 2 && (
                   <div>
-                    <ComingSoon title='Vehicle Details' message="We're working hard to bring you this feature. Please check back later!" />
-                  </div>
-                )}
-                {activeTab === 3 && (
-                  <div>
                     {/* Aadhaar Card */}
                     <div className="mb-8">
                       <div className="text-base font-semibold mb-2">Aadhaar Card</div>
-                      <InputField label="Aadhaar Number" value={aadhaarNumber} onChange={e => { setAadhaarNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter Aadhaar Number" />
+                      <InputField label="Aadhaar Number" value={aadhaarNumber} onChange={e => { setAadhaarNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter Aadhaar Number" required />
                       <div className="text-sm font-medium mb-2 mt-4">Uploaded Documents</div>
                       <div className="flex flex-wrap gap-4 mb-2">
                         {/* Aadhaar Front */}
@@ -713,7 +772,7 @@ const AddUser: React.FC = () => {
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
-                              <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button>
+                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
                               <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: aadhaarPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
@@ -742,7 +801,7 @@ const AddUser: React.FC = () => {
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
-                              <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button>
+                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
                               <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: aadhaarPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
@@ -763,7 +822,7 @@ const AddUser: React.FC = () => {
                     {/* Pan Card */}
                     <div className="mb-8">
                       <div className="text-base font-semibold mb-2">Pan Card</div>
-                      <InputField label="PAN Card" value={panNumber} onChange={e => { setPanNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter PAN Number" />
+                      <InputField label="PAN Card" value={panNumber} onChange={e => { setPanNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter PAN Number" required />
                       <div className="text-sm font-medium mb-2 mt-4">Uploaded Documents</div>
                       <div className="flex flex-wrap gap-4 mb-2">
                         {(panPreview || fetchedUser?.document?.pan?.url) && (
@@ -788,7 +847,7 @@ const AddUser: React.FC = () => {
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
-                              <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePan}><FiTrash2 /></button>
+                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePan}><FiTrash2 /></button> */}
                               <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: panPreview?.url || fetchedUser?.document?.pan?.url, type: panPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-blue-700" title="View" onClick={() => setPreviewModal({ open: true, url: panPreview?.url || fetchedUser?.document?.pan?.url, type: panPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
@@ -804,7 +863,7 @@ const AddUser: React.FC = () => {
                     {/* Driver License */}
                     <div className="mb-8">
                       <div className="text-base font-semibold mb-2">Driver License</div>
-                      <InputField label="Driver License" value={licenseNumber} onChange={e => { setLicenseNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter License Number" />
+                      <InputField label="Driver License" value={licenseNumber} onChange={e => { setLicenseNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter License Number" required />
                       <div className="text-sm font-medium mb-2 mt-4">Uploaded Documents</div>
                       <div className="flex flex-wrap gap-4 mb-2">
                         {/* License Front */}
@@ -830,7 +889,7 @@ const AddUser: React.FC = () => {
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
-                              <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseFront}><FiTrash2 /></button>
+                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseFront}><FiTrash2 /></button> */}
                               <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: licenseFrontPreview?.url || fetchedUser?.document?.dl?.frontUrl, type: licenseFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: licenseFrontPreview?.url || fetchedUser?.document?.dl?.frontUrl, type: licenseFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
@@ -859,7 +918,7 @@ const AddUser: React.FC = () => {
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
-                              <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseBack}><FiTrash2 /></button>
+                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseBack}><FiTrash2 /></button> */}
                               <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: licenseBackPreview?.url || fetchedUser?.document?.dl?.backUrl, type: licenseBackPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: licenseBackPreview?.url || fetchedUser?.document?.dl?.backUrl, type: licenseBackPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
@@ -879,11 +938,24 @@ const AddUser: React.FC = () => {
                     </div>
                     {/* Bank Documents */}
                     <div className="flex mt-8 space-x-4">
-                      <Button variant="danger" onClick={handleReject} disabled={saving}>Reject</Button>
-                      <Button variant="primary" onClick={handleSaveAndVerify} disabled={saving}>
+                      {fetchedUser?.status === 'verified' ? (
+                        <Button variant="danger" onClick={handleDeactivate} disabled={saving || isRejecting}>
+                          {isRejecting ? 'Deactivating...' : 'Deactivate'}
+                        </Button>
+                      ) : (
+                        <Button variant="danger" onClick={handleReject} disabled={saving || isRejecting}>
+                          {isRejecting ? 'Rejecting...' : 'Reject'}
+                        </Button>
+                      )}
+                      <Button variant="primary" onClick={handleSaveAndVerify} disabled={saving || isRejecting}>
                         {saving ? 'Saving...' : 'Save & Verify'}
                       </Button>
                     </div>
+                  </div>
+                )}
+                 {activeTab === 3 && (
+                  <div>
+                    <ComingSoon title='Vehicle Details' message="We're working hard to bring you this feature. Please check back later!" />
                   </div>
                 )}
               </>
@@ -897,6 +969,86 @@ const AddUser: React.FC = () => {
         ) : (
           <img src={previewModal?.url} alt="Document Preview" className="max-w-[80vw] max-h-[80vh] rounded-lg" />
         )}
+      </Modal>
+
+      {/* Rejection Confirmation Modal */}
+      <Modal open={showRejectModal} onClose={() => setShowRejectModal(false)}>
+        <div className="p-6">
+          <h3 className="mb-4 text-lg font-semibold">Confirm Rejection</h3>
+          <p className="mb-4 text-gray-700">
+            Are you sure you want to reject this user?
+          </p>
+          
+          <div className="mb-4">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Rejection Reason (Optional)
+            </label>
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Enter reason for rejection..."
+              className="w-full rounded-lg border border-gray-300 p-3 text-sm"
+              rows={4}
+            />
+          </div>
+
+          <div className="flex space-x-3">
+            <Button
+              variant="secondary"
+              onClick={() => setShowRejectModal(false)}
+              disabled={isRejecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleConfirmReject}
+              disabled={isRejecting}
+            >
+              {isRejecting ? 'Rejecting...' : 'Confirm Reject'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Deactivate Confirmation Modal */}
+      <Modal open={showDeactivateModal} onClose={() => setShowDeactivateModal(false)}>
+        <div className="p-6">
+          <h3 className="mb-4 text-lg font-semibold">Confirm Deactivation</h3>
+          <p className="mb-4 text-gray-700">
+            Are you sure you want to deactivate this user?
+          </p>
+          
+          <div className="mb-4">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Deactivation Reason (Optional)
+            </label>
+            <textarea
+              value={deactivateReason}
+              onChange={(e) => setDeactivateReason(e.target.value)}
+              placeholder="Enter reason for deactivation..."
+              className="w-full rounded-lg border border-gray-300 p-3 text-sm"
+              rows={4}
+            />
+          </div>
+
+          <div className="flex space-x-3">
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeactivateModal(false)}
+              disabled={isRejecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleConfirmDeactivate}
+              disabled={isRejecting}
+            >
+              {isRejecting ? 'Deactivating...' : 'Confirm Deactivate'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </Layout>
   );

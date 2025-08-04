@@ -17,6 +17,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAddVehicle, useUpdateVehicle } from '../hooks/useVehicles';
 import { useAddInsurance, useUpdateInsurance } from '../hooks/useInsurance';
+import { formatDateForInput, formatDateForBackend } from '../utils/dateUtils';
 import api from '../services/api';
 import { useParams } from 'react-router-dom';
 import QRCode from 'react-qr-code';
@@ -148,24 +149,24 @@ const AddVehicle: React.FC = () => {
             batteryNumber: data.batteryNumber || '',
             chassisNumber: data.chassisNumber || '',
             vehicleRCNumber: data.vehicleRCNumber || '',
-            rcRegistrationDate: data.rcRegistrationDate ? data.rcRegistrationDate.slice(0, 10) : '',
-            rcExpiryDate: data.rcExpiryDate ? data.rcExpiryDate.slice(0, 10) : '',
+            rcRegistrationDate: formatDateForInput(data.rcRegistrationDate || ''),
+            rcExpiryDate: formatDateForInput(data.rcExpiryDate || ''),
             fitnessCertificateNumber: data.fitnessCertificateNumber || '',
             manufacturingYear: data.manufacturingYear ? String(data.manufacturingYear) : '',
-            fitnessCertificateExpDate: data.fitnessCertificateExpDate ? data.fitnessCertificateExpDate.slice(0, 10) : '',
+            fitnessCertificateExpDate: formatDateForInput(data.fitnessCertificateExpDate || ''),
             numberPlateStatus: data.numberPlateStatus || '',
             vehicleNumber: data.vehicleNumber || '',
             invoiceNumber: data.invoiceNumber || '',
             invoiceAmount: data.invoiceAmount ? String(data.invoiceAmount) : '',
-            invoiceDate: data.invoiceDate ? data.invoiceDate.slice(0, 10) : '',
+            invoiceDate: formatDateForInput(data.invoiceDate || ''),
             vehicleOwnership: data.vehicleOwnership?._id || '',
             vehicleVendor: data.vehicleVendor?._id || '',
-            deliveryDate: data.deliveryDate ? data.deliveryDate.slice(0, 10) : '',
+            deliveryDate: formatDateForInput(data.deliveryDate || ''),
           });
           if (data.insurance) {
             setInsuranceForm({
               insuranceNumber: data.insurance.insuranceNumber || '',
-              validTill: data.insurance.validTill ? data.insurance.validTill.slice(0, 10) : '',
+              validTill: formatDateForInput(data.insurance.validTill || ''),
               provider: data.insurance.provider || '',
               type: data.insurance.type || '',
               rcDocumentNumber: data.insurance.documents?.rc?.documentNumber || '',
@@ -218,11 +219,21 @@ const AddVehicle: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Convert dates to DD/MM/YYYY format for backend
+      const formData = {
+        ...form,
+        rcRegistrationDate: formatDateForBackend(form.rcRegistrationDate),
+        rcExpiryDate: formatDateForBackend(form.rcExpiryDate),
+        fitnessCertificateExpDate: formatDateForBackend(form.fitnessCertificateExpDate),
+        invoiceDate: formatDateForBackend(form.invoiceDate),
+        deliveryDate: formatDateForBackend(form.deliveryDate),
+      };
+
       let response;
       if (id) {
-        response = await updateVehicleMutation.mutateAsync({ id, data: form });
+        response = await updateVehicleMutation.mutateAsync({ id, data: formData });
       } else {
-        response = await addVehicleMutation.mutateAsync(form);
+        response = await addVehicleMutation.mutateAsync(formData);
       }
       const newVehicleId = response.data?._id || response.data?.id || response?.data?.vehicle?._id;
       setVehicleId(newVehicleId);
@@ -255,7 +266,7 @@ const AddVehicle: React.FC = () => {
       const formData = new FormData();
       formData.append('vehicle', vehicleId);
       formData.append('insuranceNumber', insuranceForm.insuranceNumber);
-      formData.append('validTill', insuranceForm.validTill);
+      formData.append('validTill', formatDateForBackend(insuranceForm.validTill));
       formData.append('provider', insuranceForm.provider);
       formData.append('type', insuranceForm.type);
       if (insuranceForm.rcDocumentNumber) formData.append('rcDocumentNumber', insuranceForm.rcDocumentNumber);

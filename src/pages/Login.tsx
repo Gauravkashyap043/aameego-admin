@@ -42,6 +42,16 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      if (step === 'input') {
+        handleRequestOtp();
+      } else {
+        handleVerifyOtp();
+      }
+    }
+  };
+
   const loading = adminLoginMutation.isPending;
 
   return (
@@ -61,6 +71,7 @@ const Login: React.FC = () => {
                 placeholder="Enter phone or email"
                 value={input}
                 onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="w-full mb-3 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-base"
               />
               {error && <div className="text-red-500 text-sm mb-2 w-full text-left">{error}</div>}
@@ -79,6 +90,7 @@ const Login: React.FC = () => {
                 placeholder="Enter OTP"
                 value={otp}
                 onChange={e => setOtp(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="w-full mb-3 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-base"
               />
               {error && <div className="text-red-500 text-sm mb-2 w-full text-left">{error}</div>}

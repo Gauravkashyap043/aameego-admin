@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import InputField from '../components/InputField';
 import Modal from '../components/Modal';
+import api from '../services/api';
 
 const TABS = [
   { label: 'Supervisor', value: 'supervisor' },
@@ -24,21 +25,55 @@ const UserManagement: React.FC = () => {
     supervisorId: '',
   });
   const [assignError, setAssignError] = useState('');
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [assignSuccess, setAssignSuccess] = useState('');
 
   const tableData = activeTab === 'supervisor' ? data?.supervisors : data?.riders;
 
   const formatTableData = (users: any[] = []) => {
-    return users.map(user => ({
-      id: user._id,
-      name: user.name || 'N/A',
-      profileCode: user.profileCode,
-      profileId: user._id,
-      phone: user.authRef?.identifier || 'N/A',
-      status: user.isVerified ? 'Verified' : 'Pending',
-      statusColor: user.isVerified ? 'green' : 'yellow',
-      lastLogin: user.authRef?.lastLoginAt ? user.authRef.lastLoginAt : null,
-      profilePicture: user.profilePicture || '',
-    }));
+    return users.map(user => {
+      // Map status values to display text and colors
+      let statusText = 'Pending';
+      let statusColor = 'yellow';
+      
+      if (user.status) {
+        switch (user.status.toLowerCase()) {
+          case 'verified':
+            statusText = 'Verified';
+            statusColor = 'green';
+            break;
+          case 'rejected':
+            statusText = 'Rejected';
+            statusColor = 'red';
+            break;
+          case 'deactived':
+            statusText = 'Deactivated';
+            statusColor = 'orange';
+            break;
+          case 'pending':
+          default:
+            statusText = 'Pending';
+            statusColor = 'yellow';
+            break;
+        }
+      } else if (user.isVerified) {
+        // Fallback to isVerified field if status is not available
+        statusText = 'Verified';
+        statusColor = 'green';
+      }
+      
+      return {
+        id: user._id,
+        name: user.name || 'N/A',
+        profileCode: user.profileCode,
+        profileId: user._id,
+        phone: user.authRef?.identifier || 'N/A',
+        status: statusText,
+        statusColor: statusColor,
+        lastLogin: user.authRef?.lastLoginAt ? user.authRef.lastLoginAt : null,
+        profilePicture: user.profilePicture || '',
+      };
+    });
   };
 
   const handleView = (id: string) => {
@@ -62,17 +97,40 @@ const UserManagement: React.FC = () => {
     setAssignForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAssignSubmit = (e: React.FormEvent) => {
+  const handleAssignSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement assign supervisor logic
+    
     if (!assignForm.riderProfileCode || !assignForm.supervisorId) {
       setAssignError('Both fields are required');
       return;
     }
+
+    setAssignLoading(true);
     setAssignError('');
-    alert(`Assign supervisor ${assignForm.supervisorId} to rider ${assignForm.riderProfileCode}`);
+    setAssignSuccess('');
+
+    try {
+      // Call the assign rider API
+      await api.post('/supervisor-rider/assign-rider', {
+        riderProfileCode: assignForm.riderProfileCode,
+        supervisorId: assignForm.supervisorId
+      });
+
+      setAssignSuccess('Rider assigned successfully!');
+      setAssignForm({ riderProfileCode: '', supervisorId: '' });
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
     setShowAssignModal(false);
-    setAssignForm({ riderProfileCode: '', supervisorId: '' });
+        setAssignSuccess('');
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Error assigning rider:', error);
+      setAssignError(error.response?.data?.message || 'Failed to assign rider. Please try again.');
+    } finally {
+      setAssignLoading(false);
+    }
   };
 
   const columns: Column[] = [
@@ -104,16 +162,46 @@ const UserManagement: React.FC = () => {
       key: 'phone',
       title: 'Phone #',
     },
-    {
-      key: 'status',
-      title: 'Status',
-      render: (value, record) => (
-        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${record.statusColor === 'green' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-          <span className={`mr-1 w-2 h-2 rounded-full ${record.statusColor === 'green' ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
-          {value}
-        </span>
-      ),
-    },
+          {
+        key: 'status',
+        title: 'Status',
+        render: (value, record) => {
+          const getStatusStyles = (color: string) => {
+            switch (color) {
+              case 'green':
+                return 'bg-green-100 text-green-700';
+              case 'red':
+                return 'bg-red-100 text-red-700';
+              case 'orange':
+                return 'bg-orange-100 text-orange-700';
+              case 'yellow':
+              default:
+                return 'bg-yellow-100 text-yellow-700';
+            }
+          };
+
+          const getDotStyles = (color: string) => {
+            switch (color) {
+              case 'green':
+                return 'bg-green-500';
+              case 'red':
+                return 'bg-red-500';
+              case 'orange':
+                return 'bg-orange-500';
+              case 'yellow':
+              default:
+                return 'bg-yellow-500';
+            }
+          };
+
+          return (
+            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusStyles(record.statusColor)}`}>
+              <span className={`mr-1 w-2 h-2 rounded-full ${getDotStyles(record.statusColor)}`}></span>
+              {value}
+            </span>
+          );
+        },
+      },
     {
       key: 'lastLogin',
       title: 'Last Login',
@@ -229,12 +317,22 @@ const UserManagement: React.FC = () => {
               required
             />
             {assignError && <div className="text-red-500 text-sm">{assignError}</div>}
+            {assignSuccess && <div className="text-green-600 text-sm">{assignSuccess}</div>}
             <div className="flex gap-2 justify-end mt-2">
-              <Button variant="secondary" type="button" onClick={() => setShowAssignModal(false)}>
+              <Button 
+                variant="secondary" 
+                type="button" 
+                onClick={() => setShowAssignModal(false)}
+                disabled={assignLoading}
+              >
                 Cancel
               </Button>
-              <Button variant="primary" type="submit">
-                Assign
+              <Button 
+                variant="primary" 
+                type="submit"
+                disabled={assignLoading}
+              >
+                {assignLoading ? 'Assigning...' : 'Assign'}
               </Button>
             </div>
           </form>

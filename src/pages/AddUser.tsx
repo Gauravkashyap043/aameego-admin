@@ -243,9 +243,9 @@ const AddUser: React.FC = () => {
         setGender(userData.document?.aadhaar?.ocrFront?.gender || '');
         setFather(userData.document?.aadhaar?.ocrFront?.rawText?.split(',')[0] || '');
         setAddress(userData.document?.aadhaar?.ocrFront?.rawText || '');
-        setCity(''); // Map city if available
-        setPin(''); // Map pin if available
-        setState(''); // Map state if available
+        setCity(userData?.addressRef?.cityDistrict || ''); // Map city if available
+        setPin(userData?.addressRef?.pinCode || '');
+        setState(userData?.addressRef?.state || ''); // Map state if available
         setBankName(userData.document?.bank?.details?.bankName || '');
         setBankFullName(userData.document?.bank?.details?.holderName || '');
         setAccountNumber(userData.document?.bank?.details?.accountNumber || '');

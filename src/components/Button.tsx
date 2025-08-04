@@ -2,7 +2,7 @@ import React from 'react';
 
 type ButtonProps = {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success';
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -23,6 +23,11 @@ const variantStyles: Record<string, React.CSSProperties> = {
   },
   danger: {
     background: '#FF3B3B',
+    color: '#fff',
+    border: 'none',
+  },
+  success: {
+    background: '#008000',
     color: '#fff',
     border: 'none',
   },

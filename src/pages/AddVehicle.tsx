@@ -218,15 +218,22 @@ const AddVehicle: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Frontend validation
+    if (!form.vehicleNumber?.trim()) {
+      toast.error('Vehicle Number is required');
+      return;
+    }
+    
     try {
-      // Convert dates to DD/MM/YYYY format for backend
+      // Convert dates to proper Date objects for backend
       const formData = {
         ...form,
-        rcRegistrationDate: formatDateForBackend(form.rcRegistrationDate),
-        rcExpiryDate: formatDateForBackend(form.rcExpiryDate),
-        fitnessCertificateExpDate: formatDateForBackend(form.fitnessCertificateExpDate),
-        invoiceDate: formatDateForBackend(form.invoiceDate),
-        deliveryDate: formatDateForBackend(form.deliveryDate),
+        rcRegistrationDate: form.rcRegistrationDate ? formatDateForBackend(form.rcRegistrationDate) : undefined,
+        rcExpiryDate: form.rcExpiryDate ? formatDateForBackend(form.rcExpiryDate) : undefined,
+        fitnessCertificateExpDate: form.fitnessCertificateExpDate ? formatDateForBackend(form.fitnessCertificateExpDate) : undefined,
+        invoiceDate: form.invoiceDate ? formatDateForBackend(form.invoiceDate) : undefined,
+        deliveryDate: form.deliveryDate ? formatDateForBackend(form.deliveryDate) : undefined,
       };
 
       let response;
@@ -240,7 +247,12 @@ const AddVehicle: React.FC = () => {
       toast.success('Vehicle saved successfully!');
       setActiveTab(1);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to save vehicle');
+      // Handle duplicate vehicle number error
+      if (err?.response?.data?.message?.includes('duplicate') || err?.response?.data?.message?.includes('unique')) {
+        toast.error('Vehicle Number already exists. Please use a different vehicle number.');
+      } else {
+        toast.error(err?.response?.data?.message || 'Failed to save vehicle');
+      }
     }
   };
 
@@ -266,7 +278,11 @@ const AddVehicle: React.FC = () => {
       const formData = new FormData();
       formData.append('vehicle', vehicleId);
       formData.append('insuranceNumber', insuranceForm.insuranceNumber);
-      formData.append('validTill', formatDateForBackend(insuranceForm.validTill));
+      
+      // Convert date to string for FormData
+      const validTillDate = insuranceForm.validTill ? formatDateForBackend(insuranceForm.validTill) : '';
+      formData.append('validTill', typeof validTillDate === 'string' ? validTillDate : validTillDate.toISOString());
+      
       formData.append('provider', insuranceForm.provider);
       formData.append('type', insuranceForm.type);
       if (insuranceForm.rcDocumentNumber) formData.append('rcDocumentNumber', insuranceForm.rcDocumentNumber);
@@ -308,7 +324,7 @@ const AddVehicle: React.FC = () => {
         const pngFile = canvas.toDataURL('image/png');
         const downloadLink = document.createElement('a');
         downloadLink.href = pngFile;
-        downloadLink.download = `vehicle-qr-${vehicleId}.png`;
+        downloadLink.download = `vehicle-qr-${form.vehicleNumber || 'unknown'}.png`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
@@ -369,7 +385,7 @@ const AddVehicle: React.FC = () => {
                 <InputField label="Manufacturing Year" value={form.manufacturingYear} onChange={e => setForm({ ...form, manufacturingYear: e.target.value })} placeholder="YYYY" />
                 <InputField label="Fitness Certificate Exp Date" type="date" value={form.fitnessCertificateExpDate} onChange={e => setForm({ ...form, fitnessCertificateExpDate: e.target.value })} placeholder="DD-MM-YYYY" />
                 <InputField label="Number Plate Status" type="select" value={form.numberPlateStatus} onChange={e => setForm({ ...form, numberPlateStatus: e.target.value })} options={[{ label: 'Pending', value: 'pending' }, { label: 'Available', value: 'available' }, { label: 'Rejected', value: 'rejected' }]} required />
-                <InputField label="Vehicle Number" value={form.vehicleNumber} onChange={e => setForm({ ...form, vehicleNumber: e.target.value })} placeholder="Enter" />
+                <InputField label="Vehicle Number" value={form.vehicleNumber} onChange={e => setForm({ ...form, vehicleNumber: e.target.value })} placeholder="Enter Vehicle Number" required />
                 <InputField label="Invoice Number" value={form.invoiceNumber} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })} placeholder="Enter" />
                 <InputField label="Invoice Amount" value={form.invoiceAmount} onChange={e => setForm({ ...form, invoiceAmount: e.target.value })} placeholder="Enter" />
                 <InputField label="Invoice Date" type="date" value={form.invoiceDate} onChange={e => setForm({ ...form, invoiceDate: e.target.value })} placeholder="DD-MM-YYYY" />
@@ -455,16 +471,16 @@ const AddVehicle: React.FC = () => {
             <div className="bg-white p-8 rounded-xl shadow flex flex-col items-center">
               <h2 className="text-2xl font-semibold mb-4 text-[#3B36FF]">Vehicle QR Code</h2>
               <div ref={qrRef} className="bg-white p-4 rounded">
-                {vehicleId ? <QRCode value={vehicleId} size={256} /> : <div>No Vehicle ID available.</div>}
+                {form.vehicleNumber ? <QRCode value={form.vehicleNumber} size={256} /> : <div>No Vehicle Number available.</div>}
               </div>
               <button
                 onClick={handleDownloadQR}
                 className="mt-6 px-6 py-2 bg-[#3B36FF] text-white rounded-lg font-semibold hover:bg-[#2a28b3] transition-colors"
-                disabled={!vehicleId}
+                disabled={!form.vehicleNumber}
               >
                 Download QR
               </button>
-              <div className="mt-4 text-gray-500 text-sm">Vehicle ID: {vehicleId}</div>
+              <div className="mt-4 text-gray-500 text-sm">Vehicle Number: {form.vehicleNumber || 'Not set'}</div>
             </div>
           </div>
         )}

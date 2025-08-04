@@ -107,7 +107,7 @@ const AddUser: React.FC = () => {
   };
 
   // Handle status updates (reject/deactivate)
-  const handleStatusUpdate = (status: 'rejected' | 'deactived', reason: string) => {
+  const handleStatusUpdate = (status: 'rejected' | 'deactived' | 'verified', reason: string = '') => {
     if (!id) return;
 
     setIsRejecting(true);
@@ -117,7 +117,18 @@ const AddUser: React.FC = () => {
       {
         onSuccess: () => {
           setIsRejecting(false);
-          const actionText = status === 'rejected' ? 'Rejected' : 'Deactivated';
+          let actionText = '';
+          switch (status) {
+            case 'rejected':
+              actionText = 'Rejected';
+              break;
+            case 'deactived':
+              actionText = 'Deactivated';
+              break;
+            case 'verified':
+              actionText = 'Verified';
+              break;
+          }
           toast.success(`User ${actionText} - User status has been updated to ${status}.${reason ? ` Reason: ${reason}` : ''}`);
           // Clear reasons
           setRejectionReason('');
@@ -142,6 +153,10 @@ const AddUser: React.FC = () => {
 
   const handleConfirmDeactivate = () => {
     handleStatusUpdate('deactived', deactivateReason);
+  };
+
+  const handleVerifyUser = () => {
+    handleStatusUpdate('verified');
   };
 
   // Validation functions
@@ -224,10 +239,10 @@ const AddUser: React.FC = () => {
       setError('PAN number is required');
       return false;
     }
-    if (!licenseNumber.trim()) {
-      setError('License number is required');
-      return false;
-    }
+    // if (!licenseNumber.trim()) {
+    //   setError('License number is required');
+    //   return false;
+    // }
     setError('');
     return true;
   };
@@ -243,8 +258,8 @@ const AddUser: React.FC = () => {
         setPhone(userData.authRef?.identifier || '');
         setDob(formatDateForInput(userData.document?.aadhaar?.ocrFront?.dob || ''));
         setGender(userData.document?.aadhaar?.ocrFront?.gender || '');
-        setFather(userData.document?.aadhaar?.ocrFront?.rawText?.split(',')[0] || '');
-        setAddress(userData.document?.aadhaar?.ocrFront?.rawText || '');
+        setFather(userData.fatherName || '');
+        setAddress(userData?.addressRef?.address || '');
         setCity(userData?.addressRef?.cityDistrict || ''); // Map city if available
         setPin(userData?.addressRef?.pinCode || '');
         setState(userData?.addressRef?.state || ''); // Map state if available
@@ -377,7 +392,7 @@ const AddUser: React.FC = () => {
 
     setSaving(true);
 
-    const personalData = {
+    const personalData: any = {
       fullName: fullName,
       dob: formatDateForBackend(dob),
       gender: gender.toLowerCase(),
@@ -544,7 +559,7 @@ const AddUser: React.FC = () => {
       })
     );
 
-    formData.append('type', 'documents');
+    // formData.append('type', 'documents');
 
     updateDocument.mutate(
       { userId: String(id), formData },
@@ -577,6 +592,45 @@ const AddUser: React.FC = () => {
     setShowDeactivateModal(true);
   };
 
+  // Download file function
+  const handleDownloadFile = async (url: string, fileName: string) => {
+    try {
+      // If it's a blob URL (newly uploaded file), download directly
+      if (url.startsWith('blob:')) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+
+      // For regular URLs (server files), fetch and create blob
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch file');
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback: open in new tab if download fails
+      window.open(url, '_blank');
+    }
+  };
+
   // Check if current tab has unsaved changes
   const hasUnsavedChanges = () => {
     switch (activeTab) {
@@ -599,17 +653,45 @@ const AddUser: React.FC = () => {
     }
   };
 
+  // Reusable Action Buttons Component
+  const ActionButtons = ({ onSave, saveText = 'Save & Next' }: { onSave: () => void, saveText?: string }) => (
+    <div className="flex mt-8 space-x-4">
+      {fetchedUser?.status === 'verified' ? (
+        <Button variant="danger" onClick={handleDeactivate} disabled={saving || isRejecting}>
+          {isRejecting ? 'Deactivating...' : 'Deactivate'}
+        </Button>
+      ) : fetchedUser?.status === 'pending' ? (
+        <Button variant="danger" onClick={handleReject} disabled={saving || isRejecting}>
+          {isRejecting ? 'Rejecting...' : 'Reject'}
+        </Button>
+      ) : null}
+      <Button variant="primary" onClick={onSave} disabled={saving || isRejecting}>
+        {saving ? 'Saving...' : saveText}
+      </Button>
+    </div>
+  );
+
   return (
     <Layout>
       <div className="min-h-screen bg-[#f6f7ff] flex flex-col">
         <div className="flex-1 p-8">
           {/* Breadcrumb and Title */}
-          <div className="mb-6">
+          <div className="mb-6 flex justify-between">
             <div className="text-sm mt-1">
               <span className="text-[#3B36FF] font-medium cursor-pointer" onClick={() => navigate('/user-management')}>User List</span>
               <span className="mx-2 text-gray-400">/</span>
               <span className="text-gray-500">{id ? 'Edit User' : 'New User'}</span>
             </div>
+            {(fetchedUser?.status === 'pending' || fetchedUser?.status === 'rejected') && (
+              <Button variant="success" onClick={handleVerifyUser} disabled={saving || isRejecting}>
+                {isRejecting ? 'Verifying...' : 'Verify User'}
+              </Button>
+            )}
+            {fetchedUser?.status === 'deactived' && (
+              <Button variant="success" onClick={handleVerifyUser} disabled={saving || isRejecting}>
+                {isRejecting ? 'Activating...' : 'Activate User'}
+              </Button>
+            )}
           </div>
 
           {/* Tabs */}
@@ -651,20 +733,7 @@ const AddUser: React.FC = () => {
                       <InputField label="PIN Code" value={pin} onChange={e => { setPin(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter PIN code" required />
                       <InputField label="State" value={state} onChange={e => { setState(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter state" required />
                     </div>
-                    <div className="flex mt-8 space-x-4">
-                      {fetchedUser?.status === 'verified' ? (
-                        <Button variant="danger" onClick={handleDeactivate} disabled={saving || isRejecting}>
-                          {isRejecting ? 'Deactivating...' : 'Deactivate'}
-                        </Button>
-                      ) : (
-                        <Button variant="danger" onClick={handleReject} disabled={saving || isRejecting}>
-                          {isRejecting ? 'Rejecting...' : 'Reject'}
-                        </Button>
-                      )}
-                      <Button variant="primary" onClick={handleSavePersonalInfo} disabled={saving || isRejecting}>
-                        {saving ? 'Saving...' : 'Save & Next'}
-                      </Button>
-                    </div>
+                    <ActionButtons onSave={handleSavePersonalInfo} />
                   </div>
                 )}
                 {activeTab === 1 && (
@@ -701,7 +770,7 @@ const AddUser: React.FC = () => {
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePassbook}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: passbookPreview?.url, type: passbookPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(passbookPreview?.url || '', passbookPreview?.name || 'passbook.pdf')}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: passbookPreview?.url, type: passbookPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
@@ -726,7 +795,7 @@ const AddUser: React.FC = () => {
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteCheque}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: chequePreview?.url, type: chequePreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(chequePreview?.url || '', chequePreview?.name || 'cheque.pdf')}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: chequePreview?.url, type: chequePreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
@@ -743,20 +812,7 @@ const AddUser: React.FC = () => {
                         <input type="file" ref={chequeInputRef} className="hidden" onChange={handleChequeFileChange} />
                       </div>
                     </div>
-                    <div className="flex mt-8 space-x-4">
-                      {fetchedUser?.status === 'verified' ? (
-                        <Button variant="danger" onClick={handleDeactivate} disabled={saving || isRejecting}>
-                          {isRejecting ? 'Deactivating...' : 'Deactivate'}
-                        </Button>
-                      ) : (
-                        <Button variant="danger" onClick={handleReject} disabled={saving || isRejecting}>
-                          {isRejecting ? 'Rejecting...' : 'Reject'}
-                        </Button>
-                      )}
-                      <Button variant="primary" onClick={handleSaveBankDetails} disabled={saving || isRejecting}>
-                        {saving ? 'Saving...' : 'Save & Next'}
-                      </Button>
-                    </div>
+                    <ActionButtons onSave={handleSaveBankDetails} />
                   </div>
                 )}
                 {activeTab === 2 && (
@@ -791,7 +847,7 @@ const AddUser: React.FC = () => {
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: aadhaarFrontPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(aadhaarFrontPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, aadhaarFrontPreview?.name || 'aadhaar_front.pdf')}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarFrontPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
@@ -820,7 +876,7 @@ const AddUser: React.FC = () => {
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: aadhaarBackPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarBackPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(aadhaarBackPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, aadhaarBackPreview?.name || 'aadhaar_back.pdf')}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarBackPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarBackPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
@@ -866,7 +922,7 @@ const AddUser: React.FC = () => {
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePan}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: panPreview?.url || fetchedUser?.document?.pan?.url, type: panPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(panPreview?.url || fetchedUser?.document?.pan?.url, panPreview?.name || 'pan_front.pdf')}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-blue-700" title="View" onClick={() => setPreviewModal({ open: true, url: panPreview?.url || fetchedUser?.document?.pan?.url, type: panPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
@@ -908,7 +964,7 @@ const AddUser: React.FC = () => {
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseFront}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: licenseFrontPreview?.url || fetchedUser?.document?.dl?.frontUrl, type: licenseFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(licenseFrontPreview?.url || fetchedUser?.document?.dl?.frontUrl, licenseFrontPreview?.name || 'license_front.pdf')}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: licenseFrontPreview?.url || fetchedUser?.document?.dl?.frontUrl, type: licenseFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
@@ -937,7 +993,7 @@ const AddUser: React.FC = () => {
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseBack}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: licenseBackPreview?.url || fetchedUser?.document?.dl?.backUrl, type: licenseBackPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(licenseBackPreview?.url || fetchedUser?.document?.dl?.backUrl, licenseBackPreview?.name || 'license_back.pdf')}><FiDownload /></button>
                               <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: licenseBackPreview?.url || fetchedUser?.document?.dl?.backUrl, type: licenseBackPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
@@ -954,21 +1010,7 @@ const AddUser: React.FC = () => {
                         <input type="file" ref={licenseBackInputRef} className="hidden" onChange={handleLicenseBackFileChange} />
                       </div>
                     </div>
-                    {/* Bank Documents */}
-                    <div className="flex mt-8 space-x-4">
-                      {fetchedUser?.status === 'verified' ? (
-                        <Button variant="danger" onClick={handleDeactivate} disabled={saving || isRejecting}>
-                          {isRejecting ? 'Deactivating...' : 'Deactivate'}
-                        </Button>
-                      ) : (
-                        <Button variant="danger" onClick={handleReject} disabled={saving || isRejecting}>
-                          {isRejecting ? 'Rejecting...' : 'Reject'}
-                        </Button>
-                      )}
-                      <Button variant="primary" onClick={handleSaveAndVerify} disabled={saving || isRejecting}>
-                        {saving ? 'Saving...' : 'Save & Verify'}
-                      </Button>
-                    </div>
+                    <ActionButtons onSave={handleSaveAndVerify} saveText="Save Documents" />
                   </div>
                 )}
                 {activeTab === 3 && (

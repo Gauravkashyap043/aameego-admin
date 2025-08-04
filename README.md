@@ -1,69 +1,109 @@
-# React + TypeScript + Vite
+# Aameego Admin Panel
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🚀 Development & Production Server Setup
 
-Currently, two official plugins are available:
+This admin panel supports both development and production environments with different API endpoints.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 📋 Available Commands
 
-## Expanding the ESLint configuration
+#### Development Commands
+```bash
+# Start development server (localhost:9000 API)
+npm run dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Start development server with host access (for mobile testing)
+npm run dev:local
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Build for development environment
+npm run build:dev
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Preview development build
+npm run preview:dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+#### Production Commands
+```bash
+# Start production server (dev.aameego.com API)
+npm run start
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+# Start production server with development API
+npm run start:dev
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production environment
+npm run build
+
+# Preview production build
+npm run preview:prod
 ```
+
+### 🌍 Environment Configuration
+
+#### Development Environment (`.env.development`)
+```
+VITE_API_BASE_URL=http://localhost:9000/api/v1
+VITE_ENV=development
+```
+
+#### Production Environment (`.env.production`)
+```
+VITE_API_BASE_URL=https://dev.aameego.com/api/v1
+VITE_ENV=production
+```
+
+### 🔧 Usage Examples
+
+#### For Local Development
+```bash
+# Start with local backend
+npm run dev
+
+# Start with local backend + host access
+npm run dev:local
+```
+
+#### For Production Testing
+```bash
+# Start with production API
+npm run start
+
+# Build for production
+npm run build
+```
+
+#### For Development Testing with Production Build
+```bash
+# Build development version
+npm run build:dev
+
+# Preview development build
+npm run preview:dev
+```
+
+### 📊 Environment Detection
+
+The application automatically detects the environment and shows it in the console:
+- 🚀 **Development**: Uses `http://localhost:9000/api/v1`
+- 🚀 **Production**: Uses `https://dev.aameego.com/api/v1`
+
+### 🔄 Switching Environments
+
+1. **Development Mode**: Uses local backend server
+2. **Production Mode**: Uses hosted backend server
+3. **Environment Variables**: Automatically loaded based on mode
+
+### 📱 Mobile Testing
+
+Use `npm run dev:local` to start the development server with host access, allowing you to test the admin panel on mobile devices connected to the same network.
+
+### 🛠️ Troubleshooting
+
+- **API Connection Issues**: Check if the backend server is running
+- **Environment Variables**: Ensure `.env.development` and `.env.production` files exist
+- **Port Conflicts**: Vite will automatically find an available port
+
+### 📝 Notes
+
+- Development mode uses localhost backend
+- Production mode uses hosted backend
+- Environment variables are automatically loaded based on the mode
+- Console logs show current environment and API URL for debugging

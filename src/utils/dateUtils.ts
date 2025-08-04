@@ -30,25 +30,23 @@ export const formatDateForInput = (dateString: string): string => {
 };
 
 /**
- * Converts a date string from YYYY-MM-DD format to DD/MM/YYYY format (for backend)
+ * Converts a date string from YYYY-MM-DD format to a Date object (for backend)
  * @param dateString - Date in YYYY-MM-DD format
- * @returns Date in DD/MM/YYYY format
+ * @returns Date object or empty string if invalid
  */
-export const formatDateForBackend = (dateString: string): string => {
+export const formatDateForBackend = (dateString: string): Date | string => {
   if (!dateString) return '';
   
-  // If already in DD/MM/YYYY format, return as is
+  // If already in DD/MM/YYYY format, convert to Date
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
-    return dateString;
+    const [day, month, year] = dateString.split('/');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
   }
   
   // Parse YYYY-MM-DD format
   const date = new Date(dateString);
   if (!isNaN(date.getTime())) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    return date;
   }
   
   return '';

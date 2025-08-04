@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import Table from '../components/Table';
 import Button from '../components/Button';
+import ActionDropdown from '../components/ActionDropdown';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleList } from '../hooks/useVehicles';
 import QRCode from 'react-qr-code';
@@ -53,11 +54,39 @@ const tabs = [
 const VehicleMaster: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const navigate = useNavigate();
-  const [actionDropdown, setActionDropdown] = useState<string | null>(null);
   const [qrVehicleId, setQrVehicleId] = useState<string | null>(null);
   const qrRef = React.useRef<HTMLDivElement>(null);
 
   const { data: vehicles = [], isLoading: loadingVehicles } = useVehicleList();
+
+  // Download QR code handler
+  const handleDownloadQR = (vehicleId: string) => {
+    setQrVehicleId(vehicleId);
+    setTimeout(() => {
+      const svg = qrRef.current?.querySelector('svg');
+      if (!svg) return;
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svg);
+      const canvas = document.createElement('canvas');
+      const img = new window.Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const pngFile = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pngFile;
+          downloadLink.download = `vehicle-qr-${vehicleId}.png`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        }
+      };
+      img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
+    }, 100); // Wait for QR to render
+  };
 
   // Define columns for the vehicle table
   const columns = [
@@ -99,37 +128,18 @@ const VehicleMaster: React.FC = () => {
       key: 'actions',
       title: 'Action',
       render: (_value: any, record: any) => (
-        <div className="relative">
-          <button
-            className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 flex items-center gap-1"
-            onClick={() => setActionDropdown(actionDropdown === record.id ? null : record.id)}
-            type="button"
-          >
-            Actions <span>▼</span>
-          </button>
-          {actionDropdown === record.id && (
-            <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg z-10">
-              <button
-                className="block w-full text-left px-4 py-2 hover:bg-indigo-50"
-                onClick={() => { navigate(`/add-vehicle/${record.id}`); setActionDropdown(null); }}
-              >
-                View
-              </button>
-              <button
-                className="block w-full text-left px-4 py-2 hover:bg-indigo-50"
-                onClick={() => { navigate(`/add-vehicle/${record.id}`); setActionDropdown(null); }}
-              >
-                Edit
-              </button>
-              <button
-                className="block w-full text-left px-4 py-2 hover:bg-indigo-50"
-                onClick={() => { handleDownloadQR(record.id); setActionDropdown(null); }}
-              >
-                Download QR
-              </button>
-            </div>
-          )}
-        </div>
+        <ActionDropdown
+          items={[
+            {
+              label: 'Edit',
+              onClick: () => navigate(`/add-vehicle/${record.id}`),
+            },
+            {
+              label: 'Download QR',
+              onClick: () => handleDownloadQR(record.id),
+            },
+          ]}
+        />
       ),
     },
   ];
@@ -149,35 +159,6 @@ const VehicleMaster: React.FC = () => {
     invoiceAmount: v.invoiceAmount,
     deliveryDate: v.deliveryDate,
   }));
-
-  // Download QR code handler
-  const handleDownloadQR = (vehicleId: string) => {
-    setQrVehicleId(vehicleId);
-    setTimeout(() => {
-      const svg = qrRef.current?.querySelector('svg');
-      if (!svg) return;
-      const serializer = new XMLSerializer();
-      const svgString = serializer.serializeToString(svg);
-      const canvas = document.createElement('canvas');
-      const img = new window.Image();
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const pngFile = canvas.toDataURL('image/png');
-          const downloadLink = document.createElement('a');
-          downloadLink.href = pngFile;
-          downloadLink.download = `vehicle-qr-${vehicleId}.png`;
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-        }
-      };
-      img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
-    }, 100); // Wait for QR to render
-  };
 
   return (
     <Layout>

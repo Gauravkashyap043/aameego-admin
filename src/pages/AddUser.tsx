@@ -60,8 +60,10 @@ const AddUser: React.FC = () => {
   const [licenseNumber, setLicenseNumber] = useState('');
 
   // Add state for document files and previews
-  const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
-  const [aadhaarPreview, setAadhaarPreview] = useState<any>(null);
+  const [aadhaarFrontFile, setAadhaarFrontFile] = useState<File | null>(null);
+  const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState<any>(null);
+  const [aadhaarBackFile, setAadhaarBackFile] = useState<File | null>(null);
+  const [aadhaarBackPreview, setAadhaarBackPreview] = useState<any>(null);
   const [panFile, setPanFile] = useState<File | null>(null);
   const [panPreview, setPanPreview] = useState<any>(null);
   const [licenseFrontFile, setLicenseFrontFile] = useState<File | null>(null);
@@ -254,7 +256,8 @@ const AddUser: React.FC = () => {
         setAadhaarNumber(userData.document?.aadhaar?.ocrFront?.aadharNumber || '');
         setPanNumber(userData.document?.pan?.ocr?.panNumber || '');
         setLicenseNumber(userData.document?.dl?.ocrFront?.dlNumber || '');
-        setAadhaarPreview(userData.document?.aadhaar?.file || null);
+        setAadhaarFrontPreview(userData.document?.aadhaar?.frontFile || null);
+        setAadhaarBackPreview(userData.document?.aadhaar?.backFile || null);
         setPanPreview(userData.document?.pan?.file || null);
         setLicenseFrontPreview(userData.document?.dl?.frontFile || null);
         setLicenseBackPreview(userData.document?.dl?.backFile || null);
@@ -274,18 +277,32 @@ const AddUser: React.FC = () => {
   }, [id]);
 
   // File change handlers
-  const handleAadhaarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAadhaarFrontFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setAadhaarFile(e.target.files[0]);
+      setAadhaarFrontFile(e.target.files[0]);
       const file = e.target.files[0];
       if (file.type.startsWith('image/')) {
-        setAadhaarPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
+        setAadhaarFrontPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
       } else if (file.type === 'application/pdf') {
-        setAadhaarPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+        setAadhaarFrontPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
       }
       setHasChanges(prev => ({ ...prev, documents: true }));
     }
   };
+
+  const handleAadhaarBackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAadhaarBackFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (file.type.startsWith('image/')) {
+        setAadhaarBackPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
+      } else if (file.type === 'application/pdf') {
+        setAadhaarBackPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+      }
+      setHasChanges(prev => ({ ...prev, documents: true }));
+    }
+  };
+
   const handlePanFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setPanFile(e.target.files[0]);
@@ -369,6 +386,7 @@ const AddUser: React.FC = () => {
         address: address,
         cityDistrict: city,
         pinCode: pin,
+        state,
       },
     };
 
@@ -447,7 +465,7 @@ const AddUser: React.FC = () => {
   };
 
   // Save vehicle details
- 
+
 
   // Save and verify all documents
   const handleSaveAndVerify = () => {
@@ -462,12 +480,12 @@ const AddUser: React.FC = () => {
     const formData = new FormData();
 
     // Aadhaar
-    const aadhaarFront = normalizeFile(aadhaarFile);
+    const aadhaarFront = normalizeFile(aadhaarFrontFile);
     if (aadhaarFront) {
       formData.append('aadhaarFront', aadhaarFront);
     }
 
-    const aadhaarBack = normalizeFile(aadhaarFile); // Using same file for back for now
+    const aadhaarBack = normalizeFile(aadhaarBackFile); // Using same file for back for now
     if (aadhaarBack) {
       formData.append('aadhaarBack', aadhaarBack);
     }
@@ -624,7 +642,7 @@ const AddUser: React.FC = () => {
                     <div className="text-xl font-semibold mb-4">Personal Details</div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <InputField label="Full Name" value={fullName} onChange={e => { setFullName(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter full name" required />
-                      <InputField label="Phone Number" value={phone} onChange={e => { setPhone(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter phone number" required />
+                      <InputField label="Phone Number" value={phone} onChange={e => { setPhone(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter phone number" required disabled />
                       <InputField label="Date Of Birth" value={dob} onChange={e => { setDob(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="date" required />
                       <InputField label="Gender" value={gender} onChange={e => { setGender(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="select" options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }]} required />
                       <InputField label="Fathers Name" value={father} onChange={e => { setFather(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter father's name" required />
@@ -750,60 +768,60 @@ const AddUser: React.FC = () => {
                       <div className="text-sm font-medium mb-2 mt-4">Uploaded Documents</div>
                       <div className="flex flex-wrap gap-4 mb-2">
                         {/* Aadhaar Front */}
-                        {(aadhaarPreview || fetchedUser?.document?.aadhaar?.frontUrl) && (
+                        {(aadhaarFrontPreview || fetchedUser?.document?.aadhaar?.frontUrl) && (
                           <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
                             <div className="flex items-center gap-2">
                               <FiDownload className="text-red-500 text-2xl" />
                               <span className="font-medium text-sm">Front</span>
-                              <span className="ml-auto text-xs text-gray-400">{aadhaarPreview?.size || (fetchedUser?.document?.aadhaar?.frontUrl ? '' : '92 kb')}</span>
+                              <span className="ml-auto text-xs text-gray-400">{aadhaarFrontPreview?.size || (fetchedUser?.document?.aadhaar?.frontUrl ? '' : '92 kb')}</span>
                             </div>
-                            {(aadhaarPreview || fetchedUser?.document?.aadhaar?.frontUrl) && (
+                            {(aadhaarFrontPreview || fetchedUser?.document?.aadhaar?.frontUrl) && (
                               <div className="flex flex-col items-center mt-2">
-                                {aadhaarPreview ? (
-                                  aadhaarPreview.isPdf ? (
+                                {aadhaarFrontPreview ? (
+                                  aadhaarFrontPreview.isPdf ? (
                                     <FiDownload className="text-red-500 text-4xl mb-1" />
                                   ) : (
-                                    <img src={aadhaarPreview.url} alt="Aadhaar Preview" className="w-16 h-16 object-cover rounded border mb-1" />
+                                    <img src={aadhaarFrontPreview.url} alt="Aadhaar Preview" className="w-16 h-16 object-cover rounded border mb-1" />
                                   )
                                 ) : (
                                   <img src={fetchedUser.document.aadhaar.frontUrl} alt="Aadhaar Front" className="w-16 h-16 object-cover rounded border mb-1" />
                                 )}
-                                <span className="text-xs text-gray-500">{aadhaarPreview?.name || ''}</span>
+                                <span className="text-xs text-gray-500">{aadhaarFrontPreview?.name || ''}</span>
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: aadhaarPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: aadhaarFrontPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarFrontPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
                         )}
                         {/* Aadhaar Back */}
-                        {(aadhaarPreview || fetchedUser?.document?.aadhaar?.backUrl) && (
+                        {(aadhaarBackPreview || fetchedUser?.document?.aadhaar?.backUrl) && (
                           <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
                             <div className="flex items-center gap-2">
                               <FiDownload className="text-red-500 text-2xl" />
                               <span className="font-medium text-sm">Back</span>
-                              <span className="ml-auto text-xs text-gray-400">{aadhaarPreview?.size || (fetchedUser?.document?.aadhaar?.backUrl ? '' : '92 kb')}</span>
+                              <span className="ml-auto text-xs text-gray-400">{aadhaarBackPreview?.size || (fetchedUser?.document?.aadhaar?.backUrl ? '' : '92 kb')}</span>
                             </div>
-                            {(aadhaarPreview || fetchedUser?.document?.aadhaar?.backUrl) && (
+                            {(aadhaarBackPreview || fetchedUser?.document?.aadhaar?.backUrl) && (
                               <div className="flex flex-col items-center mt-2">
-                                {aadhaarPreview ? (
-                                  aadhaarPreview.isPdf ? (
+                                {aadhaarBackPreview ? (
+                                  aadhaarBackPreview.isPdf ? (
                                     <FiDownload className="text-red-500 text-4xl mb-1" />
                                   ) : (
-                                    <img src={aadhaarPreview.url} alt="Aadhaar Preview" className="w-16 h-16 object-cover rounded border mb-1" />
+                                    <img src={aadhaarBackPreview.url} alt="Aadhaar Preview" className="w-16 h-16 object-cover rounded border mb-1" />
                                   )
                                 ) : (
                                   <img src={fetchedUser.document.aadhaar.backUrl} alt="Aadhaar Back" className="w-16 h-16 object-cover rounded border mb-1" />
                                 )}
-                                <span className="text-xs text-gray-500">{aadhaarPreview?.name || ''}</span>
+                                <span className="text-xs text-gray-500">{aadhaarBackPreview?.name || ''}</span>
                               </div>
                             )}
                             <div className="flex gap-2 mt-2">
                               {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: aadhaarPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
+                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => setPreviewModal({ open: true, url: aadhaarBackPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarBackPreview?.isPdf ? 'pdf' : 'image' })}><FiDownload /></button>
+                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarBackPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarBackPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
                             </div>
                           </div>
                         )}
@@ -811,12 +829,12 @@ const AddUser: React.FC = () => {
                       <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
                         onClick={() => aadhaarFrontInputRef.current?.click()}>
                         <FiDownload className="mb-1" /> Upload Aadhaar Front
-                        <input type="file" ref={aadhaarFrontInputRef} className="hidden" onChange={handleAadhaarFileChange} />
+                        <input type="file" ref={aadhaarFrontInputRef} className="hidden" onChange={handleAadhaarFrontFileChange} />
                       </div>
                       <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
                         onClick={() => aadhaarBackInputRef.current?.click()}>
                         <FiDownload className="mb-1" /> Upload Aadhaar Back
-                        <input type="file" ref={aadhaarBackInputRef} className="hidden" onChange={handleAadhaarFileChange} />
+                        <input type="file" ref={aadhaarBackInputRef} className="hidden" onChange={handleAadhaarBackFileChange} />
                       </div>
                     </div>
                     {/* Pan Card */}
@@ -953,7 +971,7 @@ const AddUser: React.FC = () => {
                     </div>
                   </div>
                 )}
-                 {activeTab === 3 && (
+                {activeTab === 3 && (
                   <div>
                     <ComingSoon title='Vehicle Details' message="We're working hard to bring you this feature. Please check back later!" />
                   </div>
@@ -978,7 +996,7 @@ const AddUser: React.FC = () => {
           <p className="mb-4 text-gray-700">
             Are you sure you want to reject this user?
           </p>
-          
+
           <div className="mb-4">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Rejection Reason (Optional)
@@ -1018,7 +1036,7 @@ const AddUser: React.FC = () => {
           <p className="mb-4 text-gray-700">
             Are you sure you want to deactivate this user?
           </p>
-          
+
           <div className="mb-4">
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Deactivation Reason (Optional)

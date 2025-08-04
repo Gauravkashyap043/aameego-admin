@@ -8,12 +8,19 @@
     "dev:local": "vite --mode development --host",
     "build": "tsc -b && vite build --mode production",
     "build:dev": "tsc -b && vite build --mode development",
+    "build:prod": "tsc -b && vite build --mode production",
+    "build:deploy": "tsc -b && vite build --mode production --outDir dist",
+    "build:deploy:dev": "tsc -b && vite build --mode development --outDir dist",
     "preview": "vite preview",
     "preview:dev": "vite preview --mode development",
     "preview:prod": "vite preview --mode production",
     "lint": "eslint .",
     "start": "vite --mode production",
-    "start:dev": "vite --mode development"
+    "start:dev": "vite --mode development",
+    "clean": "rimraf dist",
+    "clean:build": "npm run clean && npm run build",
+    "clean:build:dev": "npm run clean && npm run build:dev",
+    "clean:build:prod": "npm run clean && npm run build:prod"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",

@@ -1,21 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
-import InputField from '../components/InputField';
-import Button from '../components/Button';
-import Layout from '../components/Layout';
-import { useParams, useNavigate } from 'react-router-dom';
-import api from '../services/api';
-import { FiDownload, FiEye } from 'react-icons/fi';
-import Modal from '../components/Modal';
-import ComingSoon from '../components/ComingSoon';
-import { useUpdateUserPersonalDetails, useUpdateDocument, useUpdateUserStatus } from '../hooks/useUpdateUser';
-import { toast } from 'react-toastify';
-import { formatDateForInput, formatDateForBackend } from '../utils/dateUtils';
+import React, { useState, useEffect, useRef } from "react";
+import InputField from "../components/InputField";
+import Button from "../components/Button";
+import Layout from "../components/Layout";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../services/api";
+import { FiDownload, FiEye } from "react-icons/fi";
+import Modal from "../components/Modal";
+import ComingSoon from "../components/ComingSoon";
+import {
+  useUpdateUserPersonalDetails,
+  useUpdateDocument,
+  useUpdateUserStatus,
+} from "../hooks/useUpdateUser";
+import { toast } from "react-toastify";
+import { formatDateForInput, formatDateForBackend } from "../utils/dateUtils";
+import { RejectUserModal } from "../components/modals/RejectModal";
+import { useCreateOrUpdateDocRemark } from "../hooks/useDocRemark";
+import type { Remark } from "../types";
 
 const TABS = [
-  'Personal information',
-  'Bank Details',
-  'Documents',
-  'Vehicle Details',
+  "Personal information",
+  "Bank Details",
+  "Documents",
+  "Vehicle Details",
 ];
 
 const AddUser: React.FC = () => {
@@ -23,41 +30,42 @@ const AddUser: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Add the new hooks
   const updateUserPersonalDetails = useUpdateUserPersonalDetails();
   const updateDocument = useUpdateDocument();
   const updateUserStatus = useUpdateUserStatus();
+  const createOrUpdateDocRemark = useCreateOrUpdateDocRemark();
 
   // Add state for rejection/deactivation
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [deactivateReason, setDeactivateReason] = useState('');
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [deactivateReason, setDeactivateReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
 
   // Form fields
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [dob, setDob] = useState('');
-  const [gender, setGender] = useState('');
-  const [father, setFather] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [pin, setPin] = useState('');
-  const [state, setState] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState("");
+  const [father, setFather] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [pin, setPin] = useState("");
+  const [state, setState] = useState("");
   // Bank
-  const [bankName, setBankName] = useState('');
-  const [bankFullName, setBankFullName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [confirmAccountNumber, setConfirmAccountNumber] = useState('');
-  const [ifsc, setIfsc] = useState('');
+  const [bankName, setBankName] = useState("");
+  const [bankFullName, setBankFullName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
+  const [ifsc, setIfsc] = useState("");
   // Documents
-  const [aadhaarNumber, setAadhaarNumber] = useState('');
-  const [panNumber, setPanNumber] = useState('');
-  const [licenseNumber, setLicenseNumber] = useState('');
+  const [aadhaarNumber, setAadhaarNumber] = useState("");
+  const [panNumber, setPanNumber] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
 
   // Add state for document files and previews
   const [aadhaarFrontFile, setAadhaarFrontFile] = useState<File | null>(null);
@@ -81,7 +89,13 @@ const AddUser: React.FC = () => {
   const [fetchedUser, setFetchedUser] = useState<any>(null);
 
   // Add state for preview modal
-  const [previewModal, setPreviewModal] = useState<{ open: boolean, url: string, type: string } | null>(null);
+  const [previewModal, setPreviewModal] = useState<{
+    open: boolean;
+    url: string;
+    type: string;
+  } | null>(null);
+
+  const [remarks, setRemarks] = useState<Remark[]>([]);
 
   // Add refs for file inputs
   const aadhaarFrontInputRef = useRef<HTMLInputElement>(null);
@@ -97,7 +111,7 @@ const AddUser: React.FC = () => {
     personal: false,
     bank: false,
     vehicle: false,
-    documents: false
+    documents: false,
   });
 
   // Helper function to normalize file for FormData
@@ -107,7 +121,10 @@ const AddUser: React.FC = () => {
   };
 
   // Handle status updates (reject/deactivate)
-  const handleStatusUpdate = (status: 'rejected' | 'deactived' | 'verified', reason: string = '') => {
+  const handleStatusUpdate = (
+    status: "rejected" | "deactived" | "verified",
+    reason: string = ""
+  ) => {
     if (!id) return;
 
     setIsRejecting(true);
@@ -117,27 +134,31 @@ const AddUser: React.FC = () => {
       {
         onSuccess: () => {
           setIsRejecting(false);
-          let actionText = '';
+          let actionText = "";
           switch (status) {
-            case 'rejected':
-              actionText = 'Rejected';
+            case "rejected":
+              actionText = "Rejected";
               break;
-            case 'deactived':
-              actionText = 'Deactivated';
+            case "deactived":
+              actionText = "Deactivated";
               break;
-            case 'verified':
-              actionText = 'Verified';
+            case "verified":
+              actionText = "Verified";
               break;
           }
-          toast.success(`User ${actionText} - User status has been updated to ${status}.${reason ? ` Reason: ${reason}` : ''}`);
+          toast.success(
+            `User ${actionText} - User status has been updated to ${status}.${
+              reason ? ` Reason: ${reason}` : ""
+            }`
+          );
           // Clear reasons
-          setRejectionReason('');
-          setDeactivateReason('');
+          setRejectionReason("");
+          setDeactivateReason("");
           // Close modals
           setShowRejectModal(false);
           setShowDeactivateModal(false);
           // Navigate back to user list
-          navigate('/user-management');
+          navigate("/user-management");
         },
         onError: (error) => {
           setIsRejecting(false);
@@ -148,129 +169,137 @@ const AddUser: React.FC = () => {
   };
 
   const handleConfirmReject = () => {
-    handleStatusUpdate('rejected', rejectionReason);
+    handleStatusUpdate("rejected", rejectionReason);
   };
 
   const handleConfirmDeactivate = () => {
-    handleStatusUpdate('deactived', deactivateReason);
+    handleStatusUpdate("deactived", deactivateReason);
   };
 
   const handleVerifyUser = () => {
-    handleStatusUpdate('verified');
+    handleStatusUpdate("verified");
   };
 
   // Validation functions
   const validatePersonalInfo = () => {
     if (!fullName.trim()) {
-      setError('Full name is required');
+      setError("Full name is required");
       return false;
     }
     if (!phone.trim()) {
-      setError('Phone number is required');
+      setError("Phone number is required");
       return false;
     }
     if (!dob) {
-      setError('Date of birth is required');
+      setError("Date of birth is required");
       return false;
     }
     if (!gender) {
-      setError('Gender is required');
+      setError("Gender is required");
       return false;
     }
     if (!father.trim()) {
-      setError('Father\'s name is required');
+      setError("Father's name is required");
       return false;
     }
     if (!city.trim()) {
-      setError('City/District is required');
+      setError("City/District is required");
       return false;
     }
     if (!address.trim()) {
-      setError('Address is required');
+      setError("Address is required");
       return false;
     }
     if (!pin.trim()) {
-      setError('PIN code is required');
+      setError("PIN code is required");
       return false;
     }
     if (!state.trim()) {
-      setError('State is required');
+      setError("State is required");
       return false;
     }
-    setError('');
+    setError("");
     return true;
   };
 
   const validateBankDetails = () => {
     if (!bankName.trim()) {
-      setError('Bank name is required');
+      setError("Bank name is required");
       return false;
     }
     if (!bankFullName.trim()) {
-      setError('Account holder name is required');
+      setError("Account holder name is required");
       return false;
     }
     if (!accountNumber.trim()) {
-      setError('Account number is required');
+      setError("Account number is required");
       return false;
     }
     if (!confirmAccountNumber.trim()) {
-      setError('Confirm account number is required');
+      setError("Confirm account number is required");
       return false;
     }
     if (accountNumber !== confirmAccountNumber) {
-      setError('Account numbers do not match');
+      setError("Account numbers do not match");
       return false;
     }
     if (!ifsc.trim()) {
-      setError('IFSC code is required');
+      setError("IFSC code is required");
       return false;
     }
-    setError('');
+    setError("");
     return true;
   };
 
   const validateDocuments = () => {
     if (!aadhaarNumber.trim()) {
-      setError('Aadhaar number is required');
+      setError("Aadhaar number is required");
       return false;
     }
     if (!panNumber.trim()) {
-      setError('PAN number is required');
+      setError("PAN number is required");
       return false;
     }
     // if (!licenseNumber.trim()) {
     //   setError('License number is required');
     //   return false;
     // }
-    setError('');
+    setError("");
     return true;
   };
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    api.get(`/user/${id}`)
-      .then(res => {
+    api
+      .get(`/user/${id}`)
+      .then((res) => {
+        // console.log("----res-----", res);
         const userData = res.data.data;
         // setUser(userData);
-        setFullName(userData.name || '');
-        setPhone(userData.authRef?.identifier || '');
-        setDob(formatDateForInput(userData.document?.aadhaar?.ocrFront?.dob || ''));
-        setGender(userData.document?.aadhaar?.ocrFront?.gender || '');
-        setFather(userData.fatherName || '');
-        setAddress(userData?.addressRef?.address || '');
-        setCity(userData?.addressRef?.cityDistrict || ''); // Map city if available
-        setPin(userData?.addressRef?.pinCode || '');
-        setState(userData?.addressRef?.state || ''); // Map state if available
-        setBankName(userData.document?.bank?.details?.bankName || '');
-        setBankFullName(userData.document?.bank?.details?.holderName || '');
-        setAccountNumber(userData.document?.bank?.details?.accountNumber || '');
-        setConfirmAccountNumber(userData.document?.bank?.details?.accountNumber || '');
-        setIfsc(userData.document?.bank?.details?.ifsc || '');
-        setAadhaarNumber(userData.document?.aadhaar?.ocrFront?.aadharNumber || '');
-        setPanNumber(userData.document?.pan?.ocr?.panNumber || '');
-        setLicenseNumber(userData.document?.dl?.ocrFront?.dlNumber || '');
+        setFullName(userData.name || "");
+        setPhone(userData.authRef?.identifier || "");
+        setDob(
+          formatDateForInput(userData.document?.aadhaar?.ocrFront?.dob || "")
+        );
+        setGender(userData.document?.aadhaar?.ocrFront?.gender || "");
+        setFather(userData.fatherName || "");
+        setAddress(userData?.addressRef?.address || "");
+        setCity(userData?.addressRef?.cityDistrict || ""); // Map city if available
+        setPin(userData?.addressRef?.pinCode || "");
+        setState(userData?.addressRef?.state || ""); // Map state if available
+        setBankName(userData.document?.bank?.details?.bankName || "");
+        setBankFullName(userData.document?.bank?.details?.holderName || "");
+        setAccountNumber(userData.document?.bank?.details?.accountNumber || "");
+        setConfirmAccountNumber(
+          userData.document?.bank?.details?.accountNumber || ""
+        );
+        setIfsc(userData.document?.bank?.details?.ifsc || "");
+        setAadhaarNumber(
+          userData.document?.aadhaar?.ocrFront?.aadharNumber || ""
+        );
+        setPanNumber(userData.document?.pan?.ocr?.panNumber || "");
+        setLicenseNumber(userData.document?.dl?.ocrFront?.dlNumber || "");
         setAadhaarFrontPreview(userData.document?.aadhaar?.frontFile || null);
         setAadhaarBackPreview(userData.document?.aadhaar?.backFile || null);
         setPanPreview(userData.document?.pan?.file || null);
@@ -278,43 +307,76 @@ const AddUser: React.FC = () => {
         setLicenseBackPreview(userData.document?.dl?.backFile || null);
         // Set bank document previews from URLs
         if (userData.document?.bank?.passbookUrl) {
-          setPassbookPreview({ url: userData.document.bank.passbookUrl, name: 'Passbook', size: 'N/A' });
+          setPassbookPreview({
+            url: userData.document.bank.passbookUrl,
+            name: "Passbook",
+            size: "N/A",
+          });
         }
         if (userData.document?.bank?.chequeUrl) {
-          setChequePreview({ url: userData.document.bank.chequeUrl, name: 'Cheque', size: 'N/A' });
+          setChequePreview({
+            url: userData.document.bank.chequeUrl,
+            name: "Cheque",
+            size: "N/A",
+          });
+        }
+        if (userData?.document?.documentRemarksRef) {
+          setRemarks(userData?.document?.documentRemarksRef.remarks);
         }
         setFetchedUser(userData);
       })
       .catch(() => {
-        setError('Failed to fetch user details');
+        setError("Failed to fetch user details");
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, createOrUpdateDocRemark.isSuccess]);
 
   // File change handlers
-  const handleAadhaarFrontFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAadhaarFrontFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (e.target.files && e.target.files[0]) {
       setAadhaarFrontFile(e.target.files[0]);
       const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setAadhaarFrontPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
-      } else if (file.type === 'application/pdf') {
-        setAadhaarFrontPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+      if (file.type.startsWith("image/")) {
+        setAadhaarFrontPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+        });
+      } else if (file.type === "application/pdf") {
+        setAadhaarFrontPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+          isPdf: true,
+        });
       }
-      setHasChanges(prev => ({ ...prev, documents: true }));
+      setHasChanges((prev) => ({ ...prev, documents: true }));
     }
   };
 
-  const handleAadhaarBackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAadhaarBackFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (e.target.files && e.target.files[0]) {
       setAadhaarBackFile(e.target.files[0]);
       const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setAadhaarBackPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
-      } else if (file.type === 'application/pdf') {
-        setAadhaarBackPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+      if (file.type.startsWith("image/")) {
+        setAadhaarBackPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+        });
+      } else if (file.type === "application/pdf") {
+        setAadhaarBackPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+          isPdf: true,
+        });
       }
-      setHasChanges(prev => ({ ...prev, documents: true }));
+      setHasChanges((prev) => ({ ...prev, documents: true }));
     }
   };
 
@@ -322,36 +384,67 @@ const AddUser: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setPanFile(e.target.files[0]);
       const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setPanPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
-      } else if (file.type === 'application/pdf') {
-        setPanPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+      if (file.type.startsWith("image/")) {
+        setPanPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+        });
+      } else if (file.type === "application/pdf") {
+        setPanPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+          isPdf: true,
+        });
       }
-      setHasChanges(prev => ({ ...prev, documents: true }));
+      setHasChanges((prev) => ({ ...prev, documents: true }));
     }
   };
-  const handleLicenseFrontFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLicenseFrontFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (e.target.files && e.target.files[0]) {
       setLicenseFrontFile(e.target.files[0]);
       const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setLicenseFrontPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
-      } else if (file.type === 'application/pdf') {
-        setLicenseFrontPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+      if (file.type.startsWith("image/")) {
+        setLicenseFrontPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+        });
+      } else if (file.type === "application/pdf") {
+        setLicenseFrontPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+          isPdf: true,
+        });
       }
-      setHasChanges(prev => ({ ...prev, documents: true }));
+      setHasChanges((prev) => ({ ...prev, documents: true }));
     }
   };
-  const handleLicenseBackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLicenseBackFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     if (e.target.files && e.target.files[0]) {
       setLicenseBackFile(e.target.files[0]);
       const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setLicenseBackPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
-      } else if (file.type === 'application/pdf') {
-        setLicenseBackPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+      if (file.type.startsWith("image/")) {
+        setLicenseBackPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+        });
+      } else if (file.type === "application/pdf") {
+        setLicenseBackPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+          isPdf: true,
+        });
       }
-      setHasChanges(prev => ({ ...prev, documents: true }));
+      setHasChanges((prev) => ({ ...prev, documents: true }));
     }
   };
 
@@ -360,12 +453,21 @@ const AddUser: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setPassbookFile(e.target.files[0]);
       const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setPassbookPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
-      } else if (file.type === 'application/pdf') {
-        setPassbookPreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+      if (file.type.startsWith("image/")) {
+        setPassbookPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+        });
+      } else if (file.type === "application/pdf") {
+        setPassbookPreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+          isPdf: true,
+        });
       }
-      setHasChanges(prev => ({ ...prev, bank: true }));
+      setHasChanges((prev) => ({ ...prev, bank: true }));
     }
   };
 
@@ -373,12 +475,21 @@ const AddUser: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setChequeFile(e.target.files[0]);
       const file = e.target.files[0];
-      if (file.type.startsWith('image/')) {
-        setChequePreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb` });
-      } else if (file.type === 'application/pdf') {
-        setChequePreview({ url: URL.createObjectURL(file), name: file.name, size: `${Math.round(file.size / 1024)} kb`, isPdf: true });
+      if (file.type.startsWith("image/")) {
+        setChequePreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+        });
+      } else if (file.type === "application/pdf") {
+        setChequePreview({
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${Math.round(file.size / 1024)} kb`,
+          isPdf: true,
+        });
       }
-      setHasChanges(prev => ({ ...prev, bank: true }));
+      setHasChanges((prev) => ({ ...prev, bank: true }));
     }
   };
 
@@ -410,8 +521,8 @@ const AddUser: React.FC = () => {
       {
         onSuccess: () => {
           setSaving(false);
-          toast.success('Personal information updated successfully!');
-          setHasChanges(prev => ({ ...prev, personal: false }));
+          toast.success("Personal information updated successfully!");
+          setHasChanges((prev) => ({ ...prev, personal: false }));
           setTimeout(() => {
             setActiveTab(1); // Move to next tab
           }, 2000);
@@ -438,16 +549,16 @@ const AddUser: React.FC = () => {
 
     const passbook = normalizeFile(passbookFile);
     if (passbook) {
-      formData.append('passbook', passbook);
+      formData.append("passbook", passbook);
     }
 
     const cheque = normalizeFile(chequeFile);
     if (cheque) {
-      formData.append('cheque', cheque);
+      formData.append("cheque", cheque);
     }
 
     formData.append(
-      'bank',
+      "bank",
       JSON.stringify({
         details: {
           bankName,
@@ -458,15 +569,15 @@ const AddUser: React.FC = () => {
       })
     );
 
-    formData.append('type', 'bank');
+    formData.append("type", "bank");
 
     updateDocument.mutate(
       { userId: String(id), formData },
       {
         onSuccess: () => {
           setSaving(false);
-          toast.success('Bank details updated successfully!');
-          setHasChanges(prev => ({ ...prev, bank: false }));
+          toast.success("Bank details updated successfully!");
+          setHasChanges((prev) => ({ ...prev, bank: false }));
           setTimeout(() => {
             setActiveTab(2); // Move to next tab
           }, 2000);
@@ -480,7 +591,6 @@ const AddUser: React.FC = () => {
   };
 
   // Save vehicle details
-
 
   // Save and verify all documents
   const handleSaveAndVerify = () => {
@@ -497,16 +607,16 @@ const AddUser: React.FC = () => {
     // Aadhaar
     const aadhaarFront = normalizeFile(aadhaarFrontFile);
     if (aadhaarFront) {
-      formData.append('aadhaarFront', aadhaarFront);
+      formData.append("aadhaarFront", aadhaarFront);
     }
 
     const aadhaarBack = normalizeFile(aadhaarBackFile); // Using same file for back for now
     if (aadhaarBack) {
-      formData.append('aadhaarBack', aadhaarBack);
+      formData.append("aadhaarBack", aadhaarBack);
     }
 
     formData.append(
-      'aadhaar',
+      "aadhaar",
       JSON.stringify({
         ocrFront: {
           aadharNumber: aadhaarNumber,
@@ -524,10 +634,10 @@ const AddUser: React.FC = () => {
     // PAN
     const pan = normalizeFile(panFile);
     if (pan) {
-      formData.append('pan', pan);
+      formData.append("pan", pan);
     }
     formData.append(
-      'pan',
+      "pan",
       JSON.stringify({
         ocr: {
           panNumber: panNumber,
@@ -538,19 +648,19 @@ const AddUser: React.FC = () => {
     // DL
     const dlFront = normalizeFile(licenseFrontFile);
     if (dlFront) {
-      formData.append('dlFront', dlFront);
+      formData.append("dlFront", dlFront);
     }
     const dlBack = normalizeFile(licenseBackFile);
     if (dlBack) {
-      formData.append('dlBack', dlBack);
+      formData.append("dlBack", dlBack);
     }
     formData.append(
-      'dl',
+      "dl",
       JSON.stringify({
         ocrFront: {
           dlNumber: licenseNumber,
-          name: fullName || '',
-          dob: formatDateForBackend(dob) || '',
+          name: fullName || "",
+          dob: formatDateForBackend(dob) || "",
           rawText: address,
         },
         ocrBack: {
@@ -559,17 +669,17 @@ const AddUser: React.FC = () => {
       })
     );
 
-    // formData.append('type', 'documents');
+    formData.append("type", "documents");
 
     updateDocument.mutate(
       { userId: String(id), formData },
       {
         onSuccess: () => {
           setSaving(false);
-          toast.success('Documents updated successfully!');
-          setHasChanges(prev => ({ ...prev, documents: false }));
+          toast.success("Documents updated successfully!");
+          setHasChanges((prev) => ({ ...prev, documents: false }));
           setTimeout(() => {
-            navigate('/user-management'); // Redirect to user list
+            navigate("/user-management"); // Redirect to user list
           }, 2000);
         },
         onError: (error: Error) => {
@@ -579,8 +689,6 @@ const AddUser: React.FC = () => {
       }
     );
   };
-
-
 
   // Handle reject
   const handleReject = () => {
@@ -596,8 +704,8 @@ const AddUser: React.FC = () => {
   const handleDownloadFile = async (url: string, fileName: string) => {
     try {
       // If it's a blob URL (newly uploaded file), download directly
-      if (url.startsWith('blob:')) {
-        const link = document.createElement('a');
+      if (url.startsWith("blob:")) {
+        const link = document.createElement("a");
         link.href = url;
         link.download = fileName;
         document.body.appendChild(link);
@@ -609,13 +717,13 @@ const AddUser: React.FC = () => {
       // For regular URLs (server files), fetch and create blob
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Failed to fetch file');
+        throw new Error("Failed to fetch file");
       }
 
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
 
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = blobUrl;
       link.download = fileName;
       document.body.appendChild(link);
@@ -625,48 +733,100 @@ const AddUser: React.FC = () => {
       // Clean up the blob URL
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Download failed:', error);
+      console.error("Download failed:", error);
       // Fallback: open in new tab if download fails
-      window.open(url, '_blank');
+      window.open(url, "_blank");
     }
   };
 
   // Check if current tab has unsaved changes
   const hasUnsavedChanges = () => {
     switch (activeTab) {
-      case 0: return hasChanges.personal;
-      case 1: return hasChanges.bank;
-      case 2: return hasChanges.vehicle;
-      case 3: return hasChanges.documents;
-      default: return false;
+      case 0:
+        return hasChanges.personal;
+      case 1:
+        return hasChanges.bank;
+      case 2:
+        return hasChanges.vehicle;
+      case 3:
+        return hasChanges.documents;
+      default:
+        return false;
     }
   };
 
   // Handle tab change with unsaved changes warning
   const handleTabChange = (newTab: number) => {
     if (hasUnsavedChanges()) {
-      if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+      if (
+        window.confirm(
+          "You have unsaved changes. Are you sure you want to leave?"
+        )
+      ) {
         setActiveTab(newTab);
       }
     } else {
       setActiveTab(newTab);
     }
   };
+  const onAddOrUpdteRemark = async (remarks: Remark[]) => {
+    if (!id) return;
+    createOrUpdateDocRemark.mutate(
+      { userId: id || "", remarks: remarks },
+      {
+        onSuccess(data) {
+          console.log("---datat---", data);
+          setRemarks(data?.remarks || []);
+          setShowRejectModal(false);
+          toast.success("User rejected with remarks");
+        },
+        onError(error) {
+          toast.error(`Failed to Reject the user: ${error.message}`);
+        },
+      }
+    );
+  };
 
   // Reusable Action Buttons Component
-  const ActionButtons = ({ onSave, saveText = 'Save & Next' }: { onSave: () => void, saveText?: string }) => (
+  const ActionButtons = ({
+    onSave,
+    saveText = "Save & Next",
+  }: {
+    onSave: () => void;
+    saveText?: string;
+  }) => (
     <div className="flex mt-8 space-x-4">
-      {fetchedUser?.status === 'verified' ? (
-        <Button variant="danger" onClick={handleDeactivate} disabled={saving || isRejecting}>
-          {isRejecting ? 'Deactivating...' : 'Deactivate'}
+      {fetchedUser?.status === "verified" ? (
+        <Button
+          variant="danger"
+          onClick={handleDeactivate}
+          disabled={saving || isRejecting}
+        >
+          {isRejecting ? "Deactivating..." : "Deactivate"}
         </Button>
-      ) : fetchedUser?.status === 'pending' ? (
-        <Button variant="danger" onClick={handleReject} disabled={saving || isRejecting}>
-          {isRejecting ? 'Rejecting...' : 'Reject'}
+      ) : fetchedUser?.status === "pending" ? (
+        <Button
+          variant="danger"
+          onClick={handleReject}
+          disabled={saving || isRejecting}
+        >
+          {isRejecting ? "Rejecting..." : "Reject"}
+        </Button>
+      ) : fetchedUser?.status === "rejected" ? (
+        <Button
+          variant="secondary"
+          onClick={handleReject}
+          disabled={saving || isRejecting}
+        >
+          {isRejecting ? "Updating Remarks..." : "See Remarks"}
         </Button>
       ) : null}
-      <Button variant="primary" onClick={onSave} disabled={saving || isRejecting}>
-        {saving ? 'Saving...' : saveText}
+      <Button
+        variant="primary"
+        onClick={onSave}
+        disabled={saving || isRejecting}
+      >
+        {saving ? "Saving..." : saveText}
       </Button>
     </div>
   );
@@ -678,18 +838,34 @@ const AddUser: React.FC = () => {
           {/* Breadcrumb and Title */}
           <div className="mb-6 flex justify-between">
             <div className="text-sm mt-1">
-              <span className="text-[#3B36FF] font-medium cursor-pointer" onClick={() => navigate('/user-management')}>User List</span>
+              <span
+                className="text-[#3B36FF] font-medium cursor-pointer"
+                onClick={() => navigate("/user-management")}
+              >
+                User List
+              </span>
               <span className="mx-2 text-gray-400">/</span>
-              <span className="text-gray-500">{id ? 'Edit User' : 'New User'}</span>
+              <span className="text-gray-500">
+                {id ? "Edit User" : "New User"}
+              </span>
             </div>
-            {(fetchedUser?.status === 'pending' || fetchedUser?.status === 'rejected') && (
-              <Button variant="success" onClick={handleVerifyUser} disabled={saving || isRejecting}>
-                {isRejecting ? 'Verifying...' : 'Verify User'}
+            {(fetchedUser?.status === "pending" ||
+              fetchedUser?.status === "rejected") && (
+              <Button
+                variant="success"
+                onClick={handleVerifyUser}
+                disabled={saving || isRejecting}
+              >
+                {isRejecting ? "Verifying..." : "Verify User"}
               </Button>
             )}
-            {fetchedUser?.status === 'deactived' && (
-              <Button variant="success" onClick={handleVerifyUser} disabled={saving || isRejecting}>
-                {isRejecting ? 'Activating...' : 'Activate User'}
+            {fetchedUser?.status === "deactived" && (
+              <Button
+                variant="success"
+                onClick={handleVerifyUser}
+                disabled={saving || isRejecting}
+              >
+                {isRejecting ? "Activating..." : "Activate User"}
               </Button>
             )}
           </div>
@@ -699,10 +875,11 @@ const AddUser: React.FC = () => {
             {TABS.map((tab, idx) => (
               <button
                 key={tab}
-                className={`pb-2 text-lg font-medium focus:outline-none ${activeTab === idx
-                  ? 'border-b-2 border-[#3B36FF] text-[#3B36FF]'
-                  : 'text-gray-400'
-                  }`}
+                className={`pb-2 text-lg font-medium focus:outline-none ${
+                  activeTab === idx
+                    ? "border-b-2 border-[#3B36FF] text-[#3B36FF]"
+                    : "text-gray-400"
+                }`}
                 onClick={() => handleTabChange(idx)}
               >
                 {tab}
@@ -711,328 +888,898 @@ const AddUser: React.FC = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="bg-white rounded-xl shadow p-8">
-            {loading ? (
-              <div className="text-center text-indigo-600">Loading...</div>
-            ) : error ? (
-              <div className="text-center text-red-500 mb-4">{error}</div>
-            ) : null}
-            {!loading && (
-              <>
-                {activeTab === 0 && (
-                  <div>
-                    <div className="text-xl font-semibold mb-4">Personal Details</div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <InputField label="Full Name" value={fullName} onChange={e => { setFullName(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter full name" required />
-                      <InputField label="Phone Number" value={phone} onChange={e => { setPhone(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter phone number" required disabled />
-                      <InputField label="Date Of Birth" value={dob} onChange={e => { setDob(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="date" required />
-                      <InputField label="Gender" value={gender} onChange={e => { setGender(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="select" options={[{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }]} required />
-                      <InputField label="Fathers Name" value={father} onChange={e => { setFather(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter father's name" required />
-                      <InputField label="City/District" value={city} onChange={e => { setCity(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter city/district" required />
-                      <InputField label="Address" value={address} onChange={e => { setAddress(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} type="textarea" placeholder="Enter address" className="md:col-span-3" required />
-                      <InputField label="PIN Code" value={pin} onChange={e => { setPin(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter PIN code" required />
-                      <InputField label="State" value={state} onChange={e => { setState(e.target.value); setHasChanges(prev => ({ ...prev, personal: true })); }} placeholder="Enter state" required />
-                    </div>
-                    <ActionButtons onSave={handleSavePersonalInfo} />
-                  </div>
-                )}
-                {activeTab === 1 && (
-                  <div>
-                    <div className="text-xl font-semibold mb-4">Bank Details</div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <InputField label="Bank Name" value={bankName} onChange={e => { setBankName(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter bank name" required />
-                      <InputField label="Full Name" value={bankFullName} onChange={e => { setBankFullName(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter account holder name" required />
-                      <InputField label="Account Number" value={accountNumber} onChange={e => { setAccountNumber(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter account number" required />
-                      <InputField label="Confirm Account Number" value={confirmAccountNumber} onChange={e => { setConfirmAccountNumber(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Re-enter account number" required />
-                      <InputField label="IFSC Code" value={ifsc} onChange={e => { setIfsc(e.target.value); setHasChanges(prev => ({ ...prev, bank: true })); }} placeholder="Enter IFSC code" required />
-                    </div>
-                    {/* Uploaded Documents */}
-                    <div className="mt-8">
-                      <div className="text-lg font-medium mb-2">Uploaded Documents</div>
-                      <div className="flex flex-wrap gap-4 mb-4">
-                        {/* Bank Passbook */}
-                        {passbookPreview && (
-                          <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                            <div className="flex items-center gap-2">
-                              <FiDownload className="text-red-500 text-2xl" />
-                              <span className="font-medium text-sm">Bank Passbook</span>
-                              <span className="ml-auto text-xs text-gray-400">{passbookPreview?.size || 'N/A'}</span>
-                            </div>
-                            {passbookPreview && (
-                              <div className="flex flex-col items-center mt-2">
-                                {passbookPreview.isPdf ? (
-                                  <FiDownload className="text-red-500 text-4xl mb-1" />
-                                ) : (
-                                  <img src={passbookPreview.url} alt="Passbook Preview" className="w-16 h-16 object-cover rounded border mb-1" />
-                                )}
-                                <span className="text-xs text-gray-500">{passbookPreview.name}</span>
-                              </div>
-                            )}
-                            <div className="flex gap-2 mt-2">
-                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePassbook}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(passbookPreview?.url || '', passbookPreview?.name || 'passbook.pdf')}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: passbookPreview?.url, type: passbookPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
-                            </div>
-                          </div>
-                        )}
-                        {/* Cancelled Cheque */}
-                        {chequePreview && (
-                          <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                            <div className="flex items-center gap-2">
-                              <FiDownload className="text-red-500 text-2xl" />
-                              <span className="font-medium text-sm">Cancelled Cheque</span>
-                              <span className="ml-auto text-xs text-gray-400">{chequePreview?.size || 'N/A'}</span>
-                            </div>
-                            {chequePreview && (
-                              <div className="flex flex-col items-center mt-2">
-                                {chequePreview.isPdf ? (
-                                  <FiDownload className="text-red-500 text-4xl mb-1" />
-                                ) : (
-                                  <img src={chequePreview.url} alt="Cheque Preview" className="w-16 h-16 object-cover rounded border mb-1" />
-                                )}
-                                <span className="text-xs text-gray-500">{chequePreview.name}</span>
-                              </div>
-                            )}
-                            <div className="flex gap-2 mt-2">
-                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteCheque}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(chequePreview?.url || '', chequePreview?.name || 'cheque.pdf')}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: chequePreview?.url, type: chequePreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                        onClick={() => passbookInputRef.current?.click()}>
-                        <FiDownload className="mb-1" /> Upload Bank Passbook
-                        <input type="file" ref={passbookInputRef} className="hidden" onChange={handlePassbookFileChange} />
-                      </div>
-                      <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                        onClick={() => chequeInputRef.current?.click()}>
-                        <FiDownload className="mb-1" /> Upload Cancelled Cheque
-                        <input type="file" ref={chequeInputRef} className="hidden" onChange={handleChequeFileChange} />
-                      </div>
-                    </div>
-                    <ActionButtons onSave={handleSaveBankDetails} />
-                  </div>
-                )}
-                {activeTab === 2 && (
-                  <div>
-                    {/* Aadhaar Card */}
-                    <div className="mb-8">
-                      <div className="text-base font-semibold mb-2">Aadhaar Card</div>
-                      <InputField label="Aadhaar Number" value={aadhaarNumber} onChange={e => { setAadhaarNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter Aadhaar Number" required />
-                      <div className="text-sm font-medium mb-2 mt-4">Uploaded Documents</div>
-                      <div className="flex flex-wrap gap-4 mb-2">
-                        {/* Aadhaar Front */}
-                        {(aadhaarFrontPreview || fetchedUser?.document?.aadhaar?.frontUrl) && (
-                          <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                            <div className="flex items-center gap-2">
-                              <FiDownload className="text-red-500 text-2xl" />
-                              <span className="font-medium text-sm">Front</span>
-                              <span className="ml-auto text-xs text-gray-400">{aadhaarFrontPreview?.size || (fetchedUser?.document?.aadhaar?.frontUrl ? '' : '92 kb')}</span>
-                            </div>
-                            {(aadhaarFrontPreview || fetchedUser?.document?.aadhaar?.frontUrl) && (
-                              <div className="flex flex-col items-center mt-2">
-                                {aadhaarFrontPreview ? (
-                                  aadhaarFrontPreview.isPdf ? (
-                                    <FiDownload className="text-red-500 text-4xl mb-1" />
-                                  ) : (
-                                    <img src={aadhaarFrontPreview.url} alt="Aadhaar Preview" className="w-16 h-16 object-cover rounded border mb-1" />
-                                  )
-                                ) : (
-                                  <img src={fetchedUser.document.aadhaar.frontUrl} alt="Aadhaar Front" className="w-16 h-16 object-cover rounded border mb-1" />
-                                )}
-                                <span className="text-xs text-gray-500">{aadhaarFrontPreview?.name || ''}</span>
-                              </div>
-                            )}
-                            <div className="flex gap-2 mt-2">
-                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(aadhaarFrontPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, aadhaarFrontPreview?.name || 'aadhaar_front.pdf')}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarFrontPreview?.url || fetchedUser?.document?.aadhaar?.frontUrl, type: aadhaarFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
-                            </div>
-                          </div>
-                        )}
-                        {/* Aadhaar Back */}
-                        {(aadhaarBackPreview || fetchedUser?.document?.aadhaar?.backUrl) && (
-                          <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                            <div className="flex items-center gap-2">
-                              <FiDownload className="text-red-500 text-2xl" />
-                              <span className="font-medium text-sm">Back</span>
-                              <span className="ml-auto text-xs text-gray-400">{aadhaarBackPreview?.size || (fetchedUser?.document?.aadhaar?.backUrl ? '' : '92 kb')}</span>
-                            </div>
-                            {(aadhaarBackPreview || fetchedUser?.document?.aadhaar?.backUrl) && (
-                              <div className="flex flex-col items-center mt-2">
-                                {aadhaarBackPreview ? (
-                                  aadhaarBackPreview.isPdf ? (
-                                    <FiDownload className="text-red-500 text-4xl mb-1" />
-                                  ) : (
-                                    <img src={aadhaarBackPreview.url} alt="Aadhaar Preview" className="w-16 h-16 object-cover rounded border mb-1" />
-                                  )
-                                ) : (
-                                  <img src={fetchedUser.document.aadhaar.backUrl} alt="Aadhaar Back" className="w-16 h-16 object-cover rounded border mb-1" />
-                                )}
-                                <span className="text-xs text-gray-500">{aadhaarBackPreview?.name || ''}</span>
-                              </div>
-                            )}
-                            <div className="flex gap-2 mt-2">
-                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(aadhaarBackPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, aadhaarBackPreview?.name || 'aadhaar_back.pdf')}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: aadhaarBackPreview?.url || fetchedUser?.document?.aadhaar?.backUrl, type: aadhaarBackPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                        onClick={() => aadhaarFrontInputRef.current?.click()}>
-                        <FiDownload className="mb-1" /> Upload Aadhaar Front
-                        <input type="file" ref={aadhaarFrontInputRef} className="hidden" onChange={handleAadhaarFrontFileChange} />
-                      </div>
-                      <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                        onClick={() => aadhaarBackInputRef.current?.click()}>
-                        <FiDownload className="mb-1" /> Upload Aadhaar Back
-                        <input type="file" ref={aadhaarBackInputRef} className="hidden" onChange={handleAadhaarBackFileChange} />
-                      </div>
-                    </div>
-                    {/* Pan Card */}
-                    <div className="mb-8">
-                      <div className="text-base font-semibold mb-2">Pan Card</div>
-                      <InputField label="PAN Card" value={panNumber} onChange={e => { setPanNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter PAN Number" required />
-                      <div className="text-sm font-medium mb-2 mt-4">Uploaded Documents</div>
-                      <div className="flex flex-wrap gap-4 mb-2">
-                        {(panPreview || fetchedUser?.document?.pan?.url) && (
-                          <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                            <div className="flex items-center gap-2">
-                              <FiDownload className="text-red-500 text-2xl" />
-                              <span className="font-medium text-sm">Front</span>
-                              <span className="ml-auto text-xs text-gray-400">{panPreview?.size || (fetchedUser?.document?.pan?.url ? '' : '92 kb')}</span>
-                            </div>
-                            {(panPreview || fetchedUser?.document?.pan?.url) && (
-                              <div className="flex flex-col items-center mt-2">
-                                {panPreview ? (
-                                  panPreview.isPdf ? (
-                                    <FiDownload className="text-red-500 text-4xl mb-1" />
-                                  ) : (
-                                    <img src={panPreview.url} alt="PAN Preview" className="w-16 h-16 object-cover rounded border mb-1" />
-                                  )
-                                ) : (
-                                  <img src={fetchedUser.document.pan.url} alt="PAN Front" className="w-16 h-16 object-cover rounded border mb-1" />
-                                )}
-                                <span className="text-xs text-gray-500">{panPreview?.name || ''}</span>
-                              </div>
-                            )}
-                            <div className="flex gap-2 mt-2">
-                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePan}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(panPreview?.url || fetchedUser?.document?.pan?.url, panPreview?.name || 'pan_front.pdf')}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-blue-700" title="View" onClick={() => setPreviewModal({ open: true, url: panPreview?.url || fetchedUser?.document?.pan?.url, type: panPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                        onClick={() => panInputRef.current?.click()}>
-                        <FiDownload className="mb-1" /> Upload PAN
-                        <input type="file" ref={panInputRef} className="hidden" onChange={handlePanFileChange} />
-                      </div>
-                    </div>
-                    {/* Driver License */}
-                    <div className="mb-8">
-                      <div className="text-base font-semibold mb-2">Driver License</div>
-                      <InputField label="Driver License" value={licenseNumber} onChange={e => { setLicenseNumber(e.target.value); setHasChanges(prev => ({ ...prev, documents: true })); }} placeholder="Enter License Number" required />
-                      <div className="text-sm font-medium mb-2 mt-4">Uploaded Documents</div>
-                      <div className="flex flex-wrap gap-4 mb-2">
-                        {/* License Front */}
-                        {(licenseFrontPreview || fetchedUser?.document?.dl?.frontUrl) && (
-                          <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                            <div className="flex items-center gap-2">
-                              <FiDownload className="text-red-500 text-2xl" />
-                              <span className="font-medium text-sm">Front</span>
-                              <span className="ml-auto text-xs text-gray-400">{licenseFrontPreview?.size || (fetchedUser?.document?.dl?.frontUrl ? '' : '92 kb')}</span>
-                            </div>
-                            {(licenseFrontPreview || fetchedUser?.document?.dl?.frontUrl) && (
-                              <div className="flex flex-col items-center mt-2">
-                                {licenseFrontPreview ? (
-                                  licenseFrontPreview.isPdf ? (
-                                    <FiDownload className="text-red-500 text-4xl mb-1" />
-                                  ) : (
-                                    <img src={licenseFrontPreview.url} alt="License Front Preview" className="w-16 h-16 object-cover rounded border mb-1" />
-                                  )
-                                ) : (
-                                  <img src={fetchedUser.document.dl.frontUrl} alt="License Front" className="w-16 h-16 object-cover rounded border mb-1" />
-                                )}
-                                <span className="text-xs text-gray-500">{licenseFrontPreview?.name || ''}</span>
-                              </div>
-                            )}
-                            <div className="flex gap-2 mt-2">
-                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseFront}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(licenseFrontPreview?.url || fetchedUser?.document?.dl?.frontUrl, licenseFrontPreview?.name || 'license_front.pdf')}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: licenseFrontPreview?.url || fetchedUser?.document?.dl?.frontUrl, type: licenseFrontPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
-                            </div>
-                          </div>
-                        )}
-                        {/* License Back */}
-                        {(licenseBackPreview || fetchedUser?.document?.dl?.backUrl) && (
-                          <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                            <div className="flex items-center gap-2">
-                              <FiDownload className="text-red-500 text-2xl" />
-                              <span className="font-medium text-sm">Back</span>
-                              <span className="ml-auto text-xs text-gray-400">{licenseBackPreview?.size || (fetchedUser?.document?.dl?.backUrl ? '' : '92 kb')}</span>
-                            </div>
-                            {(licenseBackPreview || fetchedUser?.document?.dl?.backUrl) && (
-                              <div className="flex flex-col items-center mt-2">
-                                {licenseBackPreview ? (
-                                  licenseBackPreview.isPdf ? (
-                                    <FiDownload className="text-red-500 text-4xl mb-1" />
-                                  ) : (
-                                    <img src={licenseBackPreview.url} alt="License Back Preview" className="w-16 h-16 object-cover rounded border mb-1" />
-                                  )
-                                ) : (
-                                  <img src={fetchedUser.document.dl.backUrl} alt="License Back" className="w-16 h-16 object-cover rounded border mb-1" />
-                                )}
-                                <span className="text-xs text-gray-500">{licenseBackPreview?.name || ''}</span>
-                              </div>
-                            )}
-                            <div className="flex gap-2 mt-2">
-                              {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseBack}><FiTrash2 /></button> */}
-                              <button className="text-blue-500 hover:text-blue-700" title="Download" onClick={() => handleDownloadFile(licenseBackPreview?.url || fetchedUser?.document?.dl?.backUrl, licenseBackPreview?.name || 'license_back.pdf')}><FiDownload /></button>
-                              <button className="text-gray-500 hover:text-gray-700" title="View" onClick={() => setPreviewModal({ open: true, url: licenseBackPreview?.url || fetchedUser?.document?.dl?.backUrl, type: licenseBackPreview?.isPdf ? 'pdf' : 'image' })}><FiEye /></button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                        onClick={() => licenseFrontInputRef.current?.click()}>
-                        <FiDownload className="mb-1" /> Upload License Front
-                        <input type="file" ref={licenseFrontInputRef} className="hidden" onChange={handleLicenseFrontFileChange} />
-                      </div>
-                      <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                        onClick={() => licenseBackInputRef.current?.click()}>
-                        <FiDownload className="mb-1" /> Upload License Back
-                        <input type="file" ref={licenseBackInputRef} className="hidden" onChange={handleLicenseBackFileChange} />
-                      </div>
-                    </div>
-                    <ActionButtons onSave={handleSaveAndVerify} saveText="Save Documents" />
-                  </div>
-                )}
-                {activeTab === 3 && (
-                  <div>
-                    <ComingSoon title='Vehicle Details' message="We're working hard to bring you this feature. Please check back later!" />
-                  </div>
-                )}
-              </>
+          <div className="bg-white rounded-xl shadow p-8 relative">
+            {loading && (
+              <div className="absolute inset-0 bg-[rgba(255,255,255,0.6)] flex items-center justify-center z-10">
+                <div className="text-indigo-600 text-lg font-semibold">
+                  Loading...
+                </div>
+              </div>
             )}
+
+            {error && !loading && (
+              <div className="text-center text-red-500 mb-4">{error}</div>
+            )}
+            {/* {!loading && ( */}
+            <>
+              {activeTab === 0 && (
+                <div>
+                  <div className="text-xl font-semibold mb-4">
+                    Personal Details
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <InputField
+                      label="Full Name"
+                      value={fullName}
+                      onChange={(e) => {
+                        setFullName(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      placeholder="Enter full name"
+                      required
+                    />
+                    <InputField
+                      label="Phone Number"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      placeholder="Enter phone number"
+                      required
+                      disabled
+                    />
+                    <InputField
+                      label="Date Of Birth"
+                      value={dob}
+                      onChange={(e) => {
+                        setDob(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      type="date"
+                      required
+                    />
+                    <InputField
+                      label="Gender"
+                      value={gender}
+                      onChange={(e) => {
+                        setGender(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      type="select"
+                      options={[
+                        { label: "Male", value: "male" },
+                        { label: "Female", value: "female" },
+                      ]}
+                      required
+                    />
+                    <InputField
+                      label="Fathers Name"
+                      value={father}
+                      onChange={(e) => {
+                        setFather(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      placeholder="Enter father's name"
+                      required
+                    />
+                    <InputField
+                      label="City/District"
+                      value={city}
+                      onChange={(e) => {
+                        setCity(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      placeholder="Enter city/district"
+                      required
+                    />
+                    <InputField
+                      label="Address"
+                      value={address}
+                      onChange={(e) => {
+                        setAddress(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      type="textarea"
+                      placeholder="Enter address"
+                      className="md:col-span-3"
+                      required
+                    />
+                    <InputField
+                      label="PIN Code"
+                      value={pin}
+                      onChange={(e) => {
+                        setPin(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      placeholder="Enter PIN code"
+                      required
+                    />
+                    <InputField
+                      label="State"
+                      value={state}
+                      onChange={(e) => {
+                        setState(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      placeholder="Enter state"
+                      required
+                    />
+                  </div>
+                  <ActionButtons onSave={handleSavePersonalInfo} />
+                </div>
+              )}
+              {activeTab === 1 && (
+                <div>
+                  <div className="text-xl font-semibold mb-4">Bank Details</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <InputField
+                      label="Bank Name"
+                      value={bankName}
+                      onChange={(e) => {
+                        setBankName(e.target.value);
+                        setHasChanges((prev) => ({ ...prev, bank: true }));
+                      }}
+                      placeholder="Enter bank name"
+                      required
+                    />
+                    <InputField
+                      label="Full Name"
+                      value={bankFullName}
+                      onChange={(e) => {
+                        setBankFullName(e.target.value);
+                        setHasChanges((prev) => ({ ...prev, bank: true }));
+                      }}
+                      placeholder="Enter account holder name"
+                      required
+                    />
+                    <InputField
+                      label="Account Number"
+                      value={accountNumber}
+                      onChange={(e) => {
+                        setAccountNumber(e.target.value);
+                        setHasChanges((prev) => ({ ...prev, bank: true }));
+                      }}
+                      placeholder="Enter account number"
+                      required
+                    />
+                    <InputField
+                      label="Confirm Account Number"
+                      value={confirmAccountNumber}
+                      onChange={(e) => {
+                        setConfirmAccountNumber(e.target.value);
+                        setHasChanges((prev) => ({ ...prev, bank: true }));
+                      }}
+                      placeholder="Re-enter account number"
+                      required
+                    />
+                    <InputField
+                      label="IFSC Code"
+                      value={ifsc}
+                      onChange={(e) => {
+                        setIfsc(e.target.value);
+                        setHasChanges((prev) => ({ ...prev, bank: true }));
+                      }}
+                      placeholder="Enter IFSC code"
+                      required
+                    />
+                  </div>
+                  {/* Uploaded Documents */}
+                  <div className="mt-8">
+                    <div className="text-lg font-medium mb-2">
+                      Uploaded Documents
+                    </div>
+                    <div className="flex flex-wrap gap-4 mb-4">
+                      {/* Bank Passbook */}
+                      {passbookPreview && (
+                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            <FiDownload className="text-red-500 text-2xl" />
+                            <span className="font-medium text-sm">
+                              Bank Passbook
+                            </span>
+                            <span className="ml-auto text-xs text-gray-400">
+                              {passbookPreview?.size || "N/A"}
+                            </span>
+                          </div>
+                          {passbookPreview && (
+                            <div className="flex flex-col items-center mt-2">
+                              {passbookPreview.isPdf ? (
+                                <FiDownload className="text-red-500 text-4xl mb-1" />
+                              ) : (
+                                <img
+                                  src={passbookPreview.url}
+                                  alt="Passbook Preview"
+                                  className="w-16 h-16 object-cover rounded border mb-1"
+                                />
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {passbookPreview.name}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePassbook}><FiTrash2 /></button> */}
+                            <button
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Download"
+                              onClick={() =>
+                                handleDownloadFile(
+                                  passbookPreview?.url || "",
+                                  passbookPreview?.name || "passbook.pdf"
+                                )
+                              }
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="text-gray-500 hover:text-gray-700"
+                              title="View"
+                              onClick={() =>
+                                setPreviewModal({
+                                  open: true,
+                                  url: passbookPreview?.url,
+                                  type: passbookPreview?.isPdf
+                                    ? "pdf"
+                                    : "image",
+                                })
+                              }
+                            >
+                              <FiEye />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Cancelled Cheque */}
+                      {chequePreview && (
+                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            <FiDownload className="text-red-500 text-2xl" />
+                            <span className="font-medium text-sm">
+                              Cancelled Cheque
+                            </span>
+                            <span className="ml-auto text-xs text-gray-400">
+                              {chequePreview?.size || "N/A"}
+                            </span>
+                          </div>
+                          {chequePreview && (
+                            <div className="flex flex-col items-center mt-2">
+                              {chequePreview.isPdf ? (
+                                <FiDownload className="text-red-500 text-4xl mb-1" />
+                              ) : (
+                                <img
+                                  src={chequePreview.url}
+                                  alt="Cheque Preview"
+                                  className="w-16 h-16 object-cover rounded border mb-1"
+                                />
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {chequePreview.name}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteCheque}><FiTrash2 /></button> */}
+                            <button
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Download"
+                              onClick={() =>
+                                handleDownloadFile(
+                                  chequePreview?.url || "",
+                                  chequePreview?.name || "cheque.pdf"
+                                )
+                              }
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="text-gray-500 hover:text-gray-700"
+                              title="View"
+                              onClick={() =>
+                                setPreviewModal({
+                                  open: true,
+                                  url: chequePreview?.url,
+                                  type: chequePreview?.isPdf ? "pdf" : "image",
+                                })
+                              }
+                            >
+                              <FiEye />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
+                      onClick={() => passbookInputRef.current?.click()}
+                    >
+                      <FiDownload className="mb-1" /> Upload Bank Passbook
+                      <input
+                        type="file"
+                        ref={passbookInputRef}
+                        className="hidden"
+                        onChange={handlePassbookFileChange}
+                      />
+                    </div>
+                    <div
+                      className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
+                      onClick={() => chequeInputRef.current?.click()}
+                    >
+                      <FiDownload className="mb-1" /> Upload Cancelled Cheque
+                      <input
+                        type="file"
+                        ref={chequeInputRef}
+                        className="hidden"
+                        onChange={handleChequeFileChange}
+                      />
+                    </div>
+                  </div>
+                  <ActionButtons onSave={handleSaveBankDetails} />
+                </div>
+              )}
+              {activeTab === 2 && (
+                <div>
+                  {/* Aadhaar Card */}
+                  <div className="mb-8">
+                    <div className="text-base font-semibold mb-2">
+                      Aadhaar Card
+                    </div>
+                    <InputField
+                      label="Aadhaar Number"
+                      value={aadhaarNumber}
+                      onChange={(e) => {
+                        setAadhaarNumber(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          documents: true,
+                        }));
+                      }}
+                      placeholder="Enter Aadhaar Number"
+                      required
+                    />
+                    <div className="text-sm font-medium mb-2 mt-4">
+                      Uploaded Documents
+                    </div>
+                    <div className="flex flex-wrap gap-4 mb-2">
+                      {/* Aadhaar Front */}
+                      {(aadhaarFrontPreview ||
+                        fetchedUser?.document?.aadhaar?.frontUrl) && (
+                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            <FiDownload className="text-red-500 text-2xl" />
+                            <span className="font-medium text-sm">Front</span>
+                            <span className="ml-auto text-xs text-gray-400">
+                              {aadhaarFrontPreview?.size ||
+                                (fetchedUser?.document?.aadhaar?.frontUrl
+                                  ? ""
+                                  : "92 kb")}
+                            </span>
+                          </div>
+                          {(aadhaarFrontPreview ||
+                            fetchedUser?.document?.aadhaar?.frontUrl) && (
+                            <div className="flex flex-col items-center mt-2">
+                              {aadhaarFrontPreview ? (
+                                aadhaarFrontPreview.isPdf ? (
+                                  <FiDownload className="text-red-500 text-4xl mb-1" />
+                                ) : (
+                                  <img
+                                    src={aadhaarFrontPreview.url}
+                                    alt="Aadhaar Preview"
+                                    className="w-16 h-16 object-cover rounded border mb-1"
+                                  />
+                                )
+                              ) : (
+                                <img
+                                  src={fetchedUser.document.aadhaar.frontUrl}
+                                  alt="Aadhaar Front"
+                                  className="w-16 h-16 object-cover rounded border mb-1"
+                                />
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {aadhaarFrontPreview?.name || ""}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
+                            <button
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Download"
+                              onClick={() =>
+                                handleDownloadFile(
+                                  aadhaarFrontPreview?.url ||
+                                    fetchedUser?.document?.aadhaar?.frontUrl,
+                                  aadhaarFrontPreview?.name ||
+                                    "aadhaar_front.pdf"
+                                )
+                              }
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="text-gray-500 hover:text-gray-700"
+                              title="View"
+                              onClick={() =>
+                                setPreviewModal({
+                                  open: true,
+                                  url:
+                                    aadhaarFrontPreview?.url ||
+                                    fetchedUser?.document?.aadhaar?.frontUrl,
+                                  type: aadhaarFrontPreview?.isPdf
+                                    ? "pdf"
+                                    : "image",
+                                })
+                              }
+                            >
+                              <FiEye />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Aadhaar Back */}
+                      {(aadhaarBackPreview ||
+                        fetchedUser?.document?.aadhaar?.backUrl) && (
+                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            <FiDownload className="text-red-500 text-2xl" />
+                            <span className="font-medium text-sm">Back</span>
+                            <span className="ml-auto text-xs text-gray-400">
+                              {aadhaarBackPreview?.size ||
+                                (fetchedUser?.document?.aadhaar?.backUrl
+                                  ? ""
+                                  : "92 kb")}
+                            </span>
+                          </div>
+                          {(aadhaarBackPreview ||
+                            fetchedUser?.document?.aadhaar?.backUrl) && (
+                            <div className="flex flex-col items-center mt-2">
+                              {aadhaarBackPreview ? (
+                                aadhaarBackPreview.isPdf ? (
+                                  <FiDownload className="text-red-500 text-4xl mb-1" />
+                                ) : (
+                                  <img
+                                    src={aadhaarBackPreview.url}
+                                    alt="Aadhaar Preview"
+                                    className="w-16 h-16 object-cover rounded border mb-1"
+                                  />
+                                )
+                              ) : (
+                                <img
+                                  src={fetchedUser.document.aadhaar.backUrl}
+                                  alt="Aadhaar Back"
+                                  className="w-16 h-16 object-cover rounded border mb-1"
+                                />
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {aadhaarBackPreview?.name || ""}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteAadhaar}><FiTrash2 /></button> */}
+                            <button
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Download"
+                              onClick={() =>
+                                handleDownloadFile(
+                                  aadhaarBackPreview?.url ||
+                                    fetchedUser?.document?.aadhaar?.backUrl,
+                                  aadhaarBackPreview?.name || "aadhaar_back.pdf"
+                                )
+                              }
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="text-gray-500 hover:text-gray-700"
+                              title="View"
+                              onClick={() =>
+                                setPreviewModal({
+                                  open: true,
+                                  url:
+                                    aadhaarBackPreview?.url ||
+                                    fetchedUser?.document?.aadhaar?.backUrl,
+                                  type: aadhaarBackPreview?.isPdf
+                                    ? "pdf"
+                                    : "image",
+                                })
+                              }
+                            >
+                              <FiEye />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
+                      onClick={() => aadhaarFrontInputRef.current?.click()}
+                    >
+                      <FiDownload className="mb-1" /> Upload Aadhaar Front
+                      <input
+                        type="file"
+                        ref={aadhaarFrontInputRef}
+                        className="hidden"
+                        onChange={handleAadhaarFrontFileChange}
+                      />
+                    </div>
+                    <div
+                      className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
+                      onClick={() => aadhaarBackInputRef.current?.click()}
+                    >
+                      <FiDownload className="mb-1" /> Upload Aadhaar Back
+                      <input
+                        type="file"
+                        ref={aadhaarBackInputRef}
+                        className="hidden"
+                        onChange={handleAadhaarBackFileChange}
+                      />
+                    </div>
+                  </div>
+                  {/* Pan Card */}
+                  <div className="mb-8">
+                    <div className="text-base font-semibold mb-2">Pan Card</div>
+                    <InputField
+                      label="PAN Card"
+                      value={panNumber}
+                      onChange={(e) => {
+                        setPanNumber(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          documents: true,
+                        }));
+                      }}
+                      placeholder="Enter PAN Number"
+                      required
+                    />
+                    <div className="text-sm font-medium mb-2 mt-4">
+                      Uploaded Documents
+                    </div>
+                    <div className="flex flex-wrap gap-4 mb-2">
+                      {(panPreview || fetchedUser?.document?.pan?.url) && (
+                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            <FiDownload className="text-red-500 text-2xl" />
+                            <span className="font-medium text-sm">Front</span>
+                            <span className="ml-auto text-xs text-gray-400">
+                              {panPreview?.size ||
+                                (fetchedUser?.document?.pan?.url
+                                  ? ""
+                                  : "92 kb")}
+                            </span>
+                          </div>
+                          {(panPreview || fetchedUser?.document?.pan?.url) && (
+                            <div className="flex flex-col items-center mt-2">
+                              {panPreview ? (
+                                panPreview.isPdf ? (
+                                  <FiDownload className="text-red-500 text-4xl mb-1" />
+                                ) : (
+                                  <img
+                                    src={panPreview.url}
+                                    alt="PAN Preview"
+                                    className="w-16 h-16 object-cover rounded border mb-1"
+                                  />
+                                )
+                              ) : (
+                                <img
+                                  src={fetchedUser.document.pan.url}
+                                  alt="PAN Front"
+                                  className="w-16 h-16 object-cover rounded border mb-1"
+                                />
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {panPreview?.name || ""}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePan}><FiTrash2 /></button> */}
+                            <button
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Download"
+                              onClick={() =>
+                                handleDownloadFile(
+                                  panPreview?.url ||
+                                    fetchedUser?.document?.pan?.url,
+                                  panPreview?.name || "pan_front.pdf"
+                                )
+                              }
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="text-gray-500 hover:text-blue-700"
+                              title="View"
+                              onClick={() =>
+                                setPreviewModal({
+                                  open: true,
+                                  url:
+                                    panPreview?.url ||
+                                    fetchedUser?.document?.pan?.url,
+                                  type: panPreview?.isPdf ? "pdf" : "image",
+                                })
+                              }
+                            >
+                              <FiEye />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
+                      onClick={() => panInputRef.current?.click()}
+                    >
+                      <FiDownload className="mb-1" /> Upload PAN
+                      <input
+                        type="file"
+                        ref={panInputRef}
+                        className="hidden"
+                        onChange={handlePanFileChange}
+                      />
+                    </div>
+                  </div>
+                  {/* Driver License */}
+                  <div className="mb-8">
+                    <div className="text-base font-semibold mb-2">
+                      Driver License
+                    </div>
+                    <InputField
+                      label="Driver License"
+                      value={licenseNumber}
+                      onChange={(e) => {
+                        setLicenseNumber(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          documents: true,
+                        }));
+                      }}
+                      placeholder="Enter License Number"
+                      required
+                    />
+                    <div className="text-sm font-medium mb-2 mt-4">
+                      Uploaded Documents
+                    </div>
+                    <div className="flex flex-wrap gap-4 mb-2">
+                      {/* License Front */}
+                      {(licenseFrontPreview ||
+                        fetchedUser?.document?.dl?.frontUrl) && (
+                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            <FiDownload className="text-red-500 text-2xl" />
+                            <span className="font-medium text-sm">Front</span>
+                            <span className="ml-auto text-xs text-gray-400">
+                              {licenseFrontPreview?.size ||
+                                (fetchedUser?.document?.dl?.frontUrl
+                                  ? ""
+                                  : "92 kb")}
+                            </span>
+                          </div>
+                          {(licenseFrontPreview ||
+                            fetchedUser?.document?.dl?.frontUrl) && (
+                            <div className="flex flex-col items-center mt-2">
+                              {licenseFrontPreview ? (
+                                licenseFrontPreview.isPdf ? (
+                                  <FiDownload className="text-red-500 text-4xl mb-1" />
+                                ) : (
+                                  <img
+                                    src={licenseFrontPreview.url}
+                                    alt="License Front Preview"
+                                    className="w-16 h-16 object-cover rounded border mb-1"
+                                  />
+                                )
+                              ) : (
+                                <img
+                                  src={fetchedUser.document.dl.frontUrl}
+                                  alt="License Front"
+                                  className="w-16 h-16 object-cover rounded border mb-1"
+                                />
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {licenseFrontPreview?.name || ""}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseFront}><FiTrash2 /></button> */}
+                            <button
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Download"
+                              onClick={() =>
+                                handleDownloadFile(
+                                  licenseFrontPreview?.url ||
+                                    fetchedUser?.document?.dl?.frontUrl,
+                                  licenseFrontPreview?.name ||
+                                    "license_front.pdf"
+                                )
+                              }
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="text-gray-500 hover:text-gray-700"
+                              title="View"
+                              onClick={() =>
+                                setPreviewModal({
+                                  open: true,
+                                  url:
+                                    licenseFrontPreview?.url ||
+                                    fetchedUser?.document?.dl?.frontUrl,
+                                  type: licenseFrontPreview?.isPdf
+                                    ? "pdf"
+                                    : "image",
+                                })
+                              }
+                            >
+                              <FiEye />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {/* License Back */}
+                      {(licenseBackPreview ||
+                        fetchedUser?.document?.dl?.backUrl) && (
+                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            <FiDownload className="text-red-500 text-2xl" />
+                            <span className="font-medium text-sm">Back</span>
+                            <span className="ml-auto text-xs text-gray-400">
+                              {licenseBackPreview?.size ||
+                                (fetchedUser?.document?.dl?.backUrl
+                                  ? ""
+                                  : "92 kb")}
+                            </span>
+                          </div>
+                          {(licenseBackPreview ||
+                            fetchedUser?.document?.dl?.backUrl) && (
+                            <div className="flex flex-col items-center mt-2">
+                              {licenseBackPreview ? (
+                                licenseBackPreview.isPdf ? (
+                                  <FiDownload className="text-red-500 text-4xl mb-1" />
+                                ) : (
+                                  <img
+                                    src={licenseBackPreview.url}
+                                    alt="License Back Preview"
+                                    className="w-16 h-16 object-cover rounded border mb-1"
+                                  />
+                                )
+                              ) : (
+                                <img
+                                  src={fetchedUser.document.dl.backUrl}
+                                  alt="License Back"
+                                  className="w-16 h-16 object-cover rounded border mb-1"
+                                />
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {licenseBackPreview?.name || ""}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteLicenseBack}><FiTrash2 /></button> */}
+                            <button
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Download"
+                              onClick={() =>
+                                handleDownloadFile(
+                                  licenseBackPreview?.url ||
+                                    fetchedUser?.document?.dl?.backUrl,
+                                  licenseBackPreview?.name || "license_back.pdf"
+                                )
+                              }
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="text-gray-500 hover:text-gray-700"
+                              title="View"
+                              onClick={() =>
+                                setPreviewModal({
+                                  open: true,
+                                  url:
+                                    licenseBackPreview?.url ||
+                                    fetchedUser?.document?.dl?.backUrl,
+                                  type: licenseBackPreview?.isPdf
+                                    ? "pdf"
+                                    : "image",
+                                })
+                              }
+                            >
+                              <FiEye />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
+                      onClick={() => licenseFrontInputRef.current?.click()}
+                    >
+                      <FiDownload className="mb-1" /> Upload License Front
+                      <input
+                        type="file"
+                        ref={licenseFrontInputRef}
+                        className="hidden"
+                        onChange={handleLicenseFrontFileChange}
+                      />
+                    </div>
+                    <div
+                      className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
+                      onClick={() => licenseBackInputRef.current?.click()}
+                    >
+                      <FiDownload className="mb-1" /> Upload License Back
+                      <input
+                        type="file"
+                        ref={licenseBackInputRef}
+                        className="hidden"
+                        onChange={handleLicenseBackFileChange}
+                      />
+                    </div>
+                  </div>
+                  <ActionButtons
+                    onSave={handleSaveAndVerify}
+                    saveText="Save Documents"
+                  />
+                </div>
+              )}
+              {activeTab === 3 && (
+                <div>
+                  <ComingSoon
+                    title="Vehicle Details"
+                    message="We're working hard to bring you this feature. Please check back later!"
+                  />
+                </div>
+              )}
+            </>
+            {/* )} */}
           </div>
         </div>
       </div>
       <Modal open={!!previewModal?.open} onClose={() => setPreviewModal(null)}>
-        {previewModal?.type === 'pdf' ? (
-          <iframe src={previewModal.url} title="PDF Preview" className="w-[80vw] h-[80vh]" />
+        {previewModal?.type === "pdf" ? (
+          <iframe
+            src={previewModal.url}
+            title="PDF Preview"
+            className="w-[80vw] h-[80vh]"
+          />
         ) : (
-          <img src={previewModal?.url} alt="Document Preview" className="max-w-[80vw] max-h-[80vh] rounded-lg" />
+          <img
+            src={previewModal?.url}
+            alt="Document Preview"
+            className="max-w-[80vw] max-h-[80vh] rounded-lg"
+          />
         )}
       </Modal>
 
       {/* Rejection Confirmation Modal */}
-      <Modal open={showRejectModal} onClose={() => setShowRejectModal(false)}>
+      {/* <Modal open={showRejectModal} onClose={() => setShowRejectModal(false)}>
         <div className="p-6">
           <h3 className="mb-4 text-lg font-semibold">Confirm Rejection</h3>
           <p className="mb-4 text-gray-700">
@@ -1069,10 +1816,21 @@ const AddUser: React.FC = () => {
             </Button>
           </div>
         </div>
-      </Modal>
+      </Modal> */}
+
+      <RejectUserModal
+        isRejecting={createOrUpdateDocRemark.isPending}
+        onAddOrUpdteRemark={onAddOrUpdteRemark}
+        setShowRejectModal={setShowRejectModal}
+        showRejectModal={showRejectModal}
+        remarks={remarks}
+      />
 
       {/* Deactivate Confirmation Modal */}
-      <Modal open={showDeactivateModal} onClose={() => setShowDeactivateModal(false)}>
+      <Modal
+        open={showDeactivateModal}
+        onClose={() => setShowDeactivateModal(false)}
+      >
         <div className="p-6">
           <h3 className="mb-4 text-lg font-semibold">Confirm Deactivation</h3>
           <p className="mb-4 text-gray-700">
@@ -1105,7 +1863,7 @@ const AddUser: React.FC = () => {
               onClick={handleConfirmDeactivate}
               disabled={isRejecting}
             >
-              {isRejecting ? 'Deactivating...' : 'Confirm Deactivate'}
+              {isRejecting ? "Deactivating..." : "Confirm Deactivate"}
             </Button>
           </div>
         </div>

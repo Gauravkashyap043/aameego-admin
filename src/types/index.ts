@@ -1,4 +1,3 @@
-
 export interface Remark {
   section: string;
   field: string;

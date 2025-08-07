@@ -60,8 +60,8 @@ const VehicleMaster: React.FC = () => {
   const { data: vehicles = [], isLoading: loadingVehicles } = useVehicleList();
 
   // Download QR code handler
-  const handleDownloadQR = (vehicleId: string) => {
-    setQrVehicleId(vehicleId);
+  const handleDownloadQR = (vehicleNumber: string) => {
+    setQrVehicleId(vehicleNumber);
     setTimeout(() => {
       const svg = qrRef.current?.querySelector('svg');
       if (!svg) return;
@@ -78,7 +78,7 @@ const VehicleMaster: React.FC = () => {
           const pngFile = canvas.toDataURL('image/png');
           const downloadLink = document.createElement('a');
           downloadLink.href = pngFile;
-          downloadLink.download = `vehicle-qr-${vehicleId}.png`;
+          downloadLink.download = `vehicle-qr-${vehicleNumber}.png`;
           document.body.appendChild(downloadLink);
           downloadLink.click();
           document.body.removeChild(downloadLink);
@@ -93,11 +93,20 @@ const VehicleMaster: React.FC = () => {
     { key: 'vehicleNumber', title: 'Vehicle Number' },
     { key: 'city', title: 'City', render: (value: any) => value?.name || '-' },
     { key: 'hub', title: 'Hub', render: (value: any) => value?.name || '-' },
-    { key: 'supervisor', title: 'Supervisor', render: (value: any) => value?.name || value?.identifier || '-' },
+    { key: 'supervisor', title: 'Supervisor', render: (value: any) => value?.accountRef?.name || value?.accountRef?.identifier || value?.identifier || '-' },
     { key: 'vehicleType', title: 'Type', render: (value: any) => value?.name || '-' },
     { key: 'oem', title: 'OEM', render: (value: any) => value?.name || '-' },
     { key: 'vehicleModel', title: 'Model', render: (value: any) => value?.name || '-' },
     { key: 'vehicleRCNumber', title: 'RC Number' },
+    {
+      key: 'currentAssignment',
+      title: 'Assigned To',
+      render: (value: any) => {
+        if (!value) return '-';
+        const rider = value.rider;
+        return rider ? `${rider?.accountRef?.name || rider.identifier} (${rider.identifier || 'No phone'})` : 'Unknown Rider';
+      },
+    },
     {
       key: 'numberPlateStatus',
       title: 'Status',
@@ -136,7 +145,7 @@ const VehicleMaster: React.FC = () => {
             },
             {
               label: 'Download QR',
-              onClick: () => handleDownloadQR(record.id),
+              onClick: () => handleDownloadQR(record.vehicleNumber),
             },
           ]}
         />
@@ -158,6 +167,7 @@ const VehicleMaster: React.FC = () => {
     numberPlateStatus: v.numberPlateStatus,
     invoiceAmount: v.invoiceAmount,
     deliveryDate: v.deliveryDate,
+    currentAssignment: v.currentAssignment,
   }));
 
   return (

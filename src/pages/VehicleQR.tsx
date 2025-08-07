@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import QRCode from 'react-qr-code';
 
 const VehicleQR: React.FC = () => {
-  const { vehicleId } = useParams<{ vehicleId: string }>();
+  const { vehicleNumber } = useParams<{ vehicleNumber: string }>();
   const qrRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = () => {
@@ -22,7 +22,7 @@ const VehicleQR: React.FC = () => {
         const pngFile = canvas.toDataURL('image/png');
         const downloadLink = document.createElement('a');
         downloadLink.href = pngFile;
-        downloadLink.download = `vehicle-qr-${vehicleId}.png`;
+        downloadLink.download = `vehicle-qr-${vehicleNumber}.png`;
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
@@ -31,8 +31,8 @@ const VehicleQR: React.FC = () => {
     img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
   };
 
-  if (!vehicleId) {
-    return <div>No Vehicle ID provided.</div>;
+  if (!vehicleNumber) {
+    return <div>No Vehicle Number provided.</div>;
   }
 
   return (
@@ -40,7 +40,7 @@ const VehicleQR: React.FC = () => {
       <div className="bg-white p-8 rounded-xl shadow flex flex-col items-center">
         <h2 className="text-2xl font-semibold mb-4 text-[#3B36FF]">Vehicle QR Code</h2>
         <div ref={qrRef} className="bg-white p-4 rounded">
-          <QRCode value={vehicleId} size={256} />
+          <QRCode value={vehicleNumber} size={256} />
         </div>
         <button
           onClick={handleDownload}
@@ -48,7 +48,7 @@ const VehicleQR: React.FC = () => {
         >
           Download QR
         </button>
-        <div className="mt-4 text-gray-500 text-sm">Vehicle ID: {vehicleId}</div>
+        <div className="mt-4 text-gray-500 text-sm">Vehicle Number: {vehicleNumber}</div>
       </div>
     </div>
   );

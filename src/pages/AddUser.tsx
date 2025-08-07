@@ -39,10 +39,11 @@ const AddUser: React.FC = () => {
   const updateUserStatus = useUpdateUserStatus();
   const createOrUpdateDocRemark = useCreateOrUpdateDocRemark();
 
+  const [tabs, setTabs] = useState(TABS);
   // Add state for rejection/deactivation
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
+  // const [rejectionReason, setRejectionReason] = useState("");
   const [deactivateReason, setDeactivateReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
 
@@ -56,6 +57,7 @@ const AddUser: React.FC = () => {
   const [city, setCity] = useState("");
   const [pin, setPin] = useState("");
   const [state, setState] = useState("");
+  const [role, setRole] = useState("");
   // Bank
   const [bankName, setBankName] = useState("");
   const [bankFullName, setBankFullName] = useState("");
@@ -84,6 +86,8 @@ const AddUser: React.FC = () => {
   const [passbookPreview, setPassbookPreview] = useState<any>(null);
   const [chequeFile, setChequeFile] = useState<File | null>(null);
   const [chequePreview, setChequePreview] = useState<any>(null);
+
+  const [assignedUser, setAssignedUser] = useState([]);
 
   // Add state to hold fetched user data
   const [fetchedUser, setFetchedUser] = useState<any>(null);
@@ -152,7 +156,7 @@ const AddUser: React.FC = () => {
             }`
           );
           // Clear reasons
-          setRejectionReason("");
+          // setRejectionReason("");
           setDeactivateReason("");
           // Close modals
           setShowRejectModal(false);
@@ -166,10 +170,6 @@ const AddUser: React.FC = () => {
         },
       }
     );
-  };
-
-  const handleConfirmReject = () => {
-    handleStatusUpdate("rejected", rejectionReason);
   };
 
   const handleConfirmDeactivate = () => {
@@ -274,14 +274,14 @@ const AddUser: React.FC = () => {
     api
       .get(`/user/${id}`)
       .then((res) => {
-        // console.log("----res-----", res);
         const userData = res.data.data;
-        // setUser(userData);
+        setRole(userData?.role?.roleName);
         setFullName(userData.name || "");
         setPhone(userData.authRef?.identifier || "");
         setDob(
           formatDateForInput(userData.document?.aadhaar?.ocrFront?.dob || "")
         );
+        setAssignedUser(userData.assignedUser);
         setGender(userData.document?.aadhaar?.ocrFront?.gender || "");
         setFather(userData.fatherName || "");
         setAddress(userData?.addressRef?.address || "");
@@ -330,6 +330,29 @@ const AddUser: React.FC = () => {
       })
       .finally(() => setLoading(false));
   }, [id, createOrUpdateDocRemark.isSuccess]);
+
+  useEffect(() => {
+    let tabName = null;
+    if (role.toLowerCase() === "supervisor") {
+      tabName = "Riders";
+    }
+    if (role.toLowerCase() === "rider") {
+      tabName = "Supervisor";
+    }
+
+    if (tabName) {
+      setTabs((prevTabs) => {
+        // Remove the opposite tab if present
+        const tabsToRemove = tabName === "Riders" ? "Supervisor" : "Riders";
+        const filteredTabs = prevTabs.filter((tab) => tab !== tabsToRemove);
+        // Ensure tabName is present only once
+        if (!filteredTabs.includes(tabName)) {
+          return [...filteredTabs, tabName];
+        }
+        return filteredTabs;
+      });
+    }
+  }, [role]);
 
   // File change handlers
   const handleAadhaarFrontFileChange = (
@@ -831,6 +854,17 @@ const AddUser: React.FC = () => {
     </div>
   );
 
+  // ...existing code...
+  const handleProfileClick = (userId: string) => {
+    navigate(`/add-user/${userId}`);
+    handleTabChange(0);
+  };
+
+  // const handleUnassign = () => {
+  //   // Unassign logic here (API call, update state, etc.)
+  // };
+  // ...existing code...
+
   return (
     <Layout>
       <div className="min-h-screen bg-[#f6f7ff] flex flex-col">
@@ -872,10 +906,10 @@ const AddUser: React.FC = () => {
 
           {/* Tabs */}
           <div className="border-b border-gray-300 mb-6 flex space-x-6">
-            {TABS.map((tab, idx) => (
+            {tabs.map((tab, idx) => (
               <button
                 key={tab}
-                className={`pb-2 text-lg font-medium focus:outline-none ${
+                className={`cursor-pointer pb-2 text-lg font-medium focus:outline-none ${
                   activeTab === idx
                     ? "border-b-2 border-[#3B36FF] text-[#3B36FF]"
                     : "text-gray-400"
@@ -1755,6 +1789,72 @@ const AddUser: React.FC = () => {
                     title="Vehicle Details"
                     message="We're working hard to bring you this feature. Please check back later!"
                   />
+                </div>
+              )}
+              {activeTab === 4 && (
+                <div className="space-y-4">
+                  {role &&
+                    assignedUser.map((item: any) => {
+                      const userData: any =
+                        role === "SUPERVISOR"
+                          ? item["rider"]
+                          : item["supervisor"];
+
+                      return (
+                        // ...existing code...
+                        <div
+                          key={item._id}
+                          className="p-4 rounded-xl shadow-lg bg-white flex flex-col md:flex-row items-center justify-between gap-4 transition hover:shadow-xl"
+                        >
+                          <div
+                            className="flex items-center gap-4 w-full md:w-auto cursor-pointer"
+                            onClick={() => handleProfileClick(userData._id)}
+                          >
+                            <img
+                              src={userData.profilePicture}
+                              alt="Supervisor"
+                              className="w-14 h-14 rounded-full object-cover border-2 border-blue-100 shadow"
+                            />
+                            <div>
+                              <button
+                                className="text-base cursor-pointer font-semibold text-blue-600 hover:underline focus:outline-none transition"
+                                title="View Profile"
+                              >
+                                {userData.name}
+                              </button>
+                              <div className="text-xs text-gray-500 mt-1">
+                                <span className="font-medium">Code:</span>{" "}
+                                {userData.profileCode}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="font-medium">Status:</span>{" "}
+                                {userData.status}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                <span className="font-medium">Language:</span>{" "}
+                                {userData.language}
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                <span className="font-medium">
+                                  Assigned At:
+                                </span>{" "}
+                                {new Date(item.assignedAt).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0">
+                            <button
+                              className="px-4 py-2 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition font-medium"
+                              // onClick={() => handleUnassign(userData._id)}
+                              title="Unassign"
+                            >
+                              Unassign
+                            </button>
+                          </div>
+                        </div>
+                        // ...existing code...
+                      );
+                    })}
                 </div>
               )}
             </>

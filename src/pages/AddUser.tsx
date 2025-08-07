@@ -43,7 +43,7 @@ const AddUser: React.FC = () => {
   // Add state for rejection/deactivation
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
+  // const [rejectionReason, setRejectionReason] = useState("");
   const [deactivateReason, setDeactivateReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
 
@@ -156,7 +156,7 @@ const AddUser: React.FC = () => {
             }`
           );
           // Clear reasons
-          setRejectionReason("");
+          // setRejectionReason("");
           setDeactivateReason("");
           // Close modals
           setShowRejectModal(false);
@@ -860,9 +860,9 @@ const AddUser: React.FC = () => {
     handleTabChange(0);
   };
 
-  const handleUnassign = (id: string) => {
-    // Unassign logic here (API call, update state, etc.)
-  };
+  // const handleUnassign = () => {
+  //   // Unassign logic here (API call, update state, etc.)
+  // };
   // ...existing code...
 
   return (
@@ -1794,7 +1794,7 @@ const AddUser: React.FC = () => {
               {activeTab === 4 && (
                 <div className="space-y-4">
                   {role &&
-                    assignedUser.map((item: any, index) => {
+                    assignedUser.map((item: any) => {
                       const userData: any =
                         role === "SUPERVISOR"
                           ? item["rider"]
@@ -1845,7 +1845,7 @@ const AddUser: React.FC = () => {
                           <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0">
                             <button
                               className="px-4 py-2 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition font-medium"
-                              onClick={() => handleUnassign(userData._id)}
+                              // onClick={() => handleUnassign(userData._id)}
                               title="Unassign"
                             >
                               Unassign

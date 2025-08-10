@@ -35,7 +35,7 @@ function App() {
         <Route path="/add-user/:id" element={<PrivateRoute><AddUser /></PrivateRoute>} />
         <Route path="/add-vehicle" element={<PrivateRoute><AddVehicle /></PrivateRoute>} />
         <Route path="/add-vehicle/:id" element={<PrivateRoute><AddVehicle /></PrivateRoute>} />
-        <Route path="/vehicle-qr/:vehicleId" element={<PrivateRoute><VehicleQR /></PrivateRoute>} />
+        <Route path="/vehicle-qr/:vehicleNumber" element={<PrivateRoute><VehicleQR /></PrivateRoute>} />
       </Routes>
     </Router>
   );

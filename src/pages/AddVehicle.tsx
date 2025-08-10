@@ -369,7 +369,7 @@ const AddVehicle: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <InputField label="City *" type="select" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} options={cities.map(city => ({ label: city.name, value: city._id }))} required />
                 <InputField label="Aameego Hub" type="select" value={form.hub} onChange={e => setForm({ ...form, hub: e.target.value })} options={hubs.map(hub => ({ label: hub.name, value: hub._id }))} required />
-                <InputField label="Supervisor" type="select" value={form.supervisor} onChange={e => setForm({ ...form, supervisor: e.target.value })} options={supervisors.map(sup => ({ label: sup.name || "N/A", value: sup._id }))} required />
+                <InputField label="Supervisor" type="select" value={form.supervisor} onChange={e => setForm({ ...form, supervisor: e.target.value })} options={supervisors.map(sup => ({ label: `${sup.name || 'N/A'} (${sup.profileCode})`, value: sup._id }))} required />
                 <InputField label="Vehicle Type" type="select" value={form.vehicleType} onChange={e => setForm({ ...form, vehicleType: e.target.value })} options={vehicleTypes.map(type => ({ label: type.name, value: type._id }))} required />
                 <InputField label="OEM" type="select" value={form.oem} onChange={e => setForm({ ...form, oem: e.target.value })} options={oems.map(oem => ({ label: oem.name, value: oem._id }))} required />
                 <InputField label="Vehicle Model" type="select" value={form.vehicleModel} onChange={e => setForm({ ...form, vehicleModel: e.target.value })} options={vehicleModels.map(model => ({ label: model.name, value: model._id }))} required />

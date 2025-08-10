@@ -1,5 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../services/api';
+export type VehiclePage = {
+  items: any[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
 
 export const useAddVehicle = () => {
   return useMutation({
@@ -10,12 +17,12 @@ export const useAddVehicle = () => {
   });
 };
 
-export const useVehicleList = () => {
-  return useQuery({
-    queryKey: ['vehicleList'],
+export const useVehicleList = (page = 1, limit = 10, search?: string) => {
+  return useQuery<VehiclePage>({
+    queryKey: ['vehicleList', page, limit, search ?? ''],
     queryFn: async () => {
-      const res = await api.get('/vehicle');
-      return res.data.data;
+      const res = await api.get('/vehicle', { params: { page, limit, search } });
+      return res.data.data as VehiclePage;
     },
   });
 };

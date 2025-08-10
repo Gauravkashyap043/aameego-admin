@@ -8,6 +8,15 @@ export type Column = {
   width?: string;
 };
 
+export type PaginationProps = {
+  page: number;
+  limit: number;
+  total: number;
+  onPageChange: (page: number) => void;
+  onLimitChange?: (limit: number) => void;
+  pageSizeOptions?: number[];
+};
+
 type TableRow = {
   id: string;
   [key: string]: any;
@@ -23,6 +32,8 @@ type TableProps = {
   showCheckbox?: boolean;
   showSearch?: boolean;
   searchPlaceholder?: string;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
   statusFilter?: boolean;
   customFilters?: {
     label: string;
@@ -30,6 +41,7 @@ type TableProps = {
     value: string;
     onChange: (value: string) => void;
   }[];
+  pagination?: PaginationProps;
 };
 
 const Table: React.FC<TableProps> = ({ 
@@ -42,10 +54,14 @@ const Table: React.FC<TableProps> = ({
   showCheckbox = false,
   showSearch = true,
   searchPlaceholder = "Search",
+  searchValue,
+  onSearchChange,
   statusFilter = false,
-  customFilters = []
+  customFilters = [],
+  pagination
 }) => {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchValue ?? '');
+  const isControlledSearch = typeof searchValue === 'string' && typeof onSearchChange === 'function';
   const [status, setStatus] = useState('All');
 
   const filteredData = data.filter(row => {
@@ -68,6 +84,51 @@ const Table: React.FC<TableProps> = ({
     );
   }
 
+  const totalPages = pagination ? Math.max(1, Math.ceil(pagination.total / pagination.limit)) : 1;
+  const currentPage = pagination ? pagination.page : 1;
+  const currentLimit = pagination ? pagination.limit : filteredData.length || 10;
+  const showingStart = pagination
+    ? (pagination.total === 0 ? 0 : (currentPage - 1) * currentLimit + 1)
+    : (filteredData.length === 0 ? 0 : 1);
+  const showingEnd = pagination
+    ? Math.min(pagination.total, (currentPage - 1) * currentLimit + filteredData.length)
+    : filteredData.length;
+
+  function getPaginationItems(): (number | 'ellipsis')[] {
+    if (!pagination) return [1];
+    const items: (number | 'ellipsis')[] = [];
+    // Show all when total pages small
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) items.push(i);
+      return items;
+    }
+    const firstTwo = [1, 2];
+    const lastTwo = [totalPages - 1, totalPages];
+    // Start
+    items.push(...firstTwo);
+    // Ellipsis after start if gap exists
+    if (currentPage > 4) items.push('ellipsis');
+    // Current page (only if not in first or last two)
+    if (!firstTwo.includes(currentPage) && !lastTwo.includes(currentPage)) {
+      items.push(currentPage);
+    }
+    // Ellipsis before end if gap exists
+    if (currentPage < totalPages - 3) items.push('ellipsis');
+    // End
+    items.push(...lastTwo);
+    // Deduplicate consecutive items (in case of overlaps)
+    const dedup: (number | 'ellipsis')[] = [];
+    for (const it of items) {
+      if (dedup.length === 0 || dedup[dedup.length - 1] !== it) {
+        dedup.push(it);
+      }
+    }
+    // Remove ellipsis at boundaries
+    if (dedup[0] === 'ellipsis') dedup.shift();
+    if (dedup[dedup.length - 1] === 'ellipsis') dedup.pop();
+    return dedup;
+  }
+
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow">
       {/* Top Bar: Search, Filters, Action Button */}
@@ -77,8 +138,14 @@ const Table: React.FC<TableProps> = ({
             <input
               type="text"
               placeholder={searchPlaceholder}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+              value={isControlledSearch ? searchValue : search}
+              onChange={e => {
+                if (isControlledSearch) {
+                  onSearchChange!(e.target.value);
+                } else {
+                  setSearch(e.target.value);
+                }
+              }}
               className="w-56 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           )}
@@ -163,12 +230,63 @@ const Table: React.FC<TableProps> = ({
       </table>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between p-4 border-t text-xs text-gray-500">
-        <div>Showing {filteredData.length} entries</div>
-        <div className="flex items-center gap-1">
-          <button className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200">&lt;</button>
-          <button className="px-2 py-1 rounded bg-indigo-600 text-white">1</button>
-          <button className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200">&gt;</button>
+      <div className="flex items-center justify-between p-4 border-t text-xs text-gray-600">
+        {pagination ? (
+          <div>
+            Showing {showingStart}–{showingEnd} of {pagination.total}
+          </div>
+        ) : (
+          <div>Showing {filteredData.length} entries</div>
+        )}
+        <div className="flex items-center gap-2">
+          {pagination && (
+            <select
+              className="px-2 py-1 border rounded"
+              value={currentLimit}
+              onChange={(e) => pagination.onLimitChange && pagination.onLimitChange(parseInt(e.target.value, 10))}
+            >
+              {(pagination.pageSizeOptions ?? [10, 20, 50]).map((n) => (
+                <option key={n} value={n}>{n} / page</option>
+              ))}
+            </select>
+          )}
+          <button
+            className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+            disabled={!pagination || currentPage <= 1}
+            onClick={() => pagination && pagination.onPageChange(Math.max(1, currentPage - 1))}
+          >
+            &lt;
+          </button>
+          {pagination
+            ? getPaginationItems().map((it, idx) =>
+                it === 'ellipsis' ? (
+                  <span key={`e-${idx}`} className="px-2 py-1 text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={it}
+                    className={`px-2 py-1 rounded ${
+                      it === currentPage
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                    onClick={() => pagination.onPageChange(it)}
+                  >
+                    {it}
+                  </button>
+                )
+              )
+            : (
+              <button className="px-2 py-1 rounded bg-indigo-600 text-white" disabled>
+                1
+              </button>
+            )}
+          <button
+            className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+            disabled={!pagination || currentPage >= totalPages}
+            onClick={() => pagination && pagination.onPageChange(Math.min(totalPages, currentPage + 1))}
+          >
+            &gt;
+          </button>
         </div>
       </div>
     </div>

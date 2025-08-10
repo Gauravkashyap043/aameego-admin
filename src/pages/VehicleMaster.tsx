@@ -4,7 +4,7 @@ import Table from '../components/Table';
 import Button from '../components/Button';
 import ActionDropdown from '../components/ActionDropdown';
 import { useNavigate } from 'react-router-dom';
-import { useVehicleList } from '../hooks/useVehicles';
+import { useVehicleList, type VehiclePage } from '../hooks/useVehicles';
 import QRCode from 'react-qr-code';
 import { FiTruck, FiFileText, FiPackage, FiTool, FiAlertTriangle } from 'react-icons/fi';
 
@@ -57,11 +57,17 @@ const VehicleMaster: React.FC = () => {
   const [qrVehicleId, setQrVehicleId] = useState<string | null>(null);
   const qrRef = React.useRef<HTMLDivElement>(null);
 
-  const { data: vehicles = [], isLoading: loadingVehicles } = useVehicleList();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState('');
+  const { data: vehiclePage, isLoading: loadingVehicles } = useVehicleList(page, limit, search);
+  const vehicles = (vehiclePage as VehiclePage | undefined)?.items ?? [];
+  const total = (vehiclePage as VehiclePage | undefined)?.total ?? 0;
+  // const totalPages = (vehiclePage as VehiclePage | undefined)?.totalPages ?? 1;
 
   // Download QR code handler
-  const handleDownloadQR = (vehicleId: string) => {
-    setQrVehicleId(vehicleId);
+  const handleDownloadQR = (vehicleNumber: string) => {
+    setQrVehicleId(vehicleNumber);
     setTimeout(() => {
       const svg = qrRef.current?.querySelector('svg');
       if (!svg) return;
@@ -78,7 +84,7 @@ const VehicleMaster: React.FC = () => {
           const pngFile = canvas.toDataURL('image/png');
           const downloadLink = document.createElement('a');
           downloadLink.href = pngFile;
-          downloadLink.download = `vehicle-qr-${vehicleId}.png`;
+          downloadLink.download = `vehicle-qr-${vehicleNumber}.png`;
           document.body.appendChild(downloadLink);
           downloadLink.click();
           document.body.removeChild(downloadLink);
@@ -93,14 +99,23 @@ const VehicleMaster: React.FC = () => {
     { key: 'vehicleNumber', title: 'Vehicle Number' },
     { key: 'city', title: 'City', render: (value: any) => value?.name || '-' },
     { key: 'hub', title: 'Hub', render: (value: any) => value?.name || '-' },
-    { key: 'supervisor', title: 'Supervisor', render: (value: any) => value?.name || value?.identifier || '-' },
+    { key: 'supervisor', title: 'Supervisor', render: (value: any) => value?.name || "_"},
     { key: 'vehicleType', title: 'Type', render: (value: any) => value?.name || '-' },
     { key: 'oem', title: 'OEM', render: (value: any) => value?.name || '-' },
     { key: 'vehicleModel', title: 'Model', render: (value: any) => value?.name || '-' },
     { key: 'vehicleRCNumber', title: 'RC Number' },
     {
+      key: 'currentAssignment',
+      title: 'Assigned To',
+      render: (value: any) => {
+        if (!value) return '-';
+        const rider = value.rider;
+        return rider ? `${rider?.accountRef?.name || rider.identifier} (${rider.identifier || 'No phone'})` : 'Unknown Rider';
+      },
+    },
+    {
       key: 'numberPlateStatus',
-      title: 'Status',
+      title: 'Number Plate Status',
       render: (value: any) => {
         let color = 'bg-yellow-100 text-yellow-800 border-yellow-300';
         let dot = 'bg-yellow-400';
@@ -136,7 +151,7 @@ const VehicleMaster: React.FC = () => {
             },
             {
               label: 'Download QR',
-              onClick: () => handleDownloadQR(record.id),
+              onClick: () => handleDownloadQR(record.vehicleNumber),
             },
           ]}
         />
@@ -158,6 +173,7 @@ const VehicleMaster: React.FC = () => {
     numberPlateStatus: v.numberPlateStatus,
     invoiceAmount: v.invoiceAmount,
     deliveryDate: v.deliveryDate,
+    currentAssignment: v.currentAssignment,
   }));
 
   return (
@@ -211,8 +227,20 @@ const VehicleMaster: React.FC = () => {
             isLoading={loadingVehicles}
             actionButtonLabel="+ New Vehicle"
             onActionButtonClick={() => navigate('/add-vehicle')}
+            showSearch
+            searchValue={search}
+            onSearchChange={(v) => { setPage(1); setSearch(v); }}
+            pagination={{
+              page,
+              limit,
+              total,
+              onPageChange: setPage,
+              onLimitChange: (n) => { setPage(1); setLimit(n); },
+              pageSizeOptions: [10, 20, 50],
+            }}
           />
         )}
+
       </div>
     </Layout>
   );

@@ -6,7 +6,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { FiDownload, FiEye } from "react-icons/fi";
 import Modal from "../components/Modal";
-import ComingSoon from "../components/ComingSoon";
 import {
   useUpdateUserPersonalDetails,
   useUpdateDocument,
@@ -17,6 +16,9 @@ import { formatDateForInput, formatDateForBackend } from "../utils/dateUtils";
 import { RejectUserModal } from "../components/modals/RejectModal";
 import { useCreateOrUpdateDocRemark } from "../hooks/useDocRemark";
 import type { Remark } from "../types";
+import { useFetchVehicleAssignment } from "../hooks/useFetchVehicleAssignment";
+import { useFetchAvailableVehicles } from "../hooks/useFetchAvailableVehicles";
+import { useFetchUser } from "../hooks/useFetchUser";
 
 const TABS = [
   "Personal information",
@@ -28,16 +30,20 @@ const TABS = [
 const AddUser: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const { id } = useParams<{ id: string }>();
+  const [authId, setAuthId] = useState('');
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   // Add the new hooks
   const updateUserPersonalDetails = useUpdateUserPersonalDetails();
   const updateDocument = useUpdateDocument();
   const updateUserStatus = useUpdateUserStatus();
   const createOrUpdateDocRemark = useCreateOrUpdateDocRemark();
+  const { data: vehicleAssignmentsRaw, isLoading: loadingAssignments, error: vehicleAssignmentsError } = useFetchVehicleAssignment(authId);
+  const vehicleAssignments: any[] = Array.isArray(vehicleAssignmentsRaw) ? vehicleAssignmentsRaw : [];
+  const { data: availableVehicles = [], isLoading: loadingAvailableVehicles } = useFetchAvailableVehicles();
+  const { data: userData, isLoading: loadingUser } = useFetchUser(id);
 
   const [tabs, setTabs] = useState(TABS);
   // Add state for rejection/deactivation
@@ -88,9 +94,6 @@ const AddUser: React.FC = () => {
   const [chequePreview, setChequePreview] = useState<any>(null);
 
   const [assignedUser, setAssignedUser] = useState([]);
-
-  // Add state to hold fetched user data
-  const [fetchedUser, setFetchedUser] = useState<any>(null);
 
   // Add state for preview modal
   const [previewModal, setPreviewModal] = useState<{
@@ -151,8 +154,7 @@ const AddUser: React.FC = () => {
               break;
           }
           toast.success(
-            `User ${actionText} - User status has been updated to ${status}.${
-              reason ? ` Reason: ${reason}` : ""
+            `User ${actionText} - User status has been updated to ${status}.${reason ? ` Reason: ${reason}` : ""
             }`
           );
           // Clear reasons
@@ -260,23 +262,15 @@ const AddUser: React.FC = () => {
       setError("PAN number is required");
       return false;
     }
-    // if (!licenseNumber.trim()) {
-    //   setError('License number is required');
-    //   return false;
-    // }
     setError("");
     return true;
   };
 
   useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    api
-      .get(`/user/${id}`)
-      .then((res) => {
-        const userData = res.data.data;
+    if (userData) {
         setRole(userData?.role?.roleName);
         setFullName(userData.name || "");
+      setAuthId(userData.authRef?._id || "");
         setPhone(userData.authRef?.identifier || "");
         setDob(
           formatDateForInput(userData.document?.aadhaar?.ocrFront?.dob || "")
@@ -285,9 +279,9 @@ const AddUser: React.FC = () => {
         setGender(userData.document?.aadhaar?.ocrFront?.gender || "");
         setFather(userData.fatherName || "");
         setAddress(userData?.addressRef?.address || "");
-        setCity(userData?.addressRef?.cityDistrict || ""); // Map city if available
+      setCity(userData?.addressRef?.cityDistrict || "");
         setPin(userData?.addressRef?.pinCode || "");
-        setState(userData?.addressRef?.state || ""); // Map state if available
+      setState(userData?.addressRef?.state || "");
         setBankName(userData.document?.bank?.details?.bankName || "");
         setBankFullName(userData.document?.bank?.details?.holderName || "");
         setAccountNumber(userData.document?.bank?.details?.accountNumber || "");
@@ -305,7 +299,6 @@ const AddUser: React.FC = () => {
         setPanPreview(userData.document?.pan?.file || null);
         setLicenseFrontPreview(userData.document?.dl?.frontFile || null);
         setLicenseBackPreview(userData.document?.dl?.backFile || null);
-        // Set bank document previews from URLs
         if (userData.document?.bank?.passbookUrl) {
           setPassbookPreview({
             url: userData.document.bank.passbookUrl,
@@ -323,13 +316,8 @@ const AddUser: React.FC = () => {
         if (userData?.document?.documentRemarksRef) {
           setRemarks(userData?.document?.documentRemarksRef.remarks);
         }
-        setFetchedUser(userData);
-      })
-      .catch(() => {
-        setError("Failed to fetch user details");
-      })
-      .finally(() => setLoading(false));
-  }, [id, createOrUpdateDocRemark.isSuccess]);
+    }
+  }, [userData]);
 
   useEffect(() => {
     let tabName = null;
@@ -819,7 +807,7 @@ const AddUser: React.FC = () => {
     saveText?: string;
   }) => (
     <div className="flex mt-8 space-x-4">
-      {fetchedUser?.status === "verified" ? (
+      {userData?.status === "verified" ? (
         <Button
           variant="danger"
           onClick={handleDeactivate}
@@ -827,7 +815,7 @@ const AddUser: React.FC = () => {
         >
           {isRejecting ? "Deactivating..." : "Deactivate"}
         </Button>
-      ) : fetchedUser?.status === "pending" ? (
+      ) : userData?.status === "pending" ? (
         <Button
           variant="danger"
           onClick={handleReject}
@@ -835,7 +823,7 @@ const AddUser: React.FC = () => {
         >
           {isRejecting ? "Rejecting..." : "Reject"}
         </Button>
-      ) : fetchedUser?.status === "rejected" ? (
+      ) : userData?.status === "rejected" ? (
         <Button
           variant="secondary"
           onClick={handleReject}
@@ -865,6 +853,31 @@ const AddUser: React.FC = () => {
   // };
   // ...existing code...
 
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState("");
+  const [assignLoading, setAssignLoading] = useState(false);
+
+  const handleAssignVehicle = async () => {
+    if (!selectedVehicle || !authId) return;
+    setAssignLoading(true);
+    try {
+      await api.post("/vehicle-assignment/assign/admin", {
+        vehicleNumber: selectedVehicle,
+        riderId: authId, // This should be the user's auth ID (which is correct)
+        vehicleCondition: { description: "Assigned by admin" },
+      });
+      toast.success("Vehicle assigned successfully!");
+      setShowAssignModal(false);
+      setSelectedVehicle("");
+      // Refetch assignments
+      setTimeout(() => window.location.reload(), 500);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to assign vehicle");
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="min-h-screen bg-[#f6f7ff] flex flex-col">
@@ -883,8 +896,8 @@ const AddUser: React.FC = () => {
                 {id ? "Edit User" : "New User"}
               </span>
             </div>
-            {(fetchedUser?.status === "pending" ||
-              fetchedUser?.status === "rejected") && (
+            {(userData?.status === "pending" ||
+              userData?.status === "rejected") && (
               <Button
                 variant="success"
                 onClick={handleVerifyUser}
@@ -893,7 +906,7 @@ const AddUser: React.FC = () => {
                 {isRejecting ? "Verifying..." : "Verify User"}
               </Button>
             )}
-            {fetchedUser?.status === "deactived" && (
+            {userData?.status === "deactived" && (
               <Button
                 variant="success"
                 onClick={handleVerifyUser}
@@ -909,8 +922,7 @@ const AddUser: React.FC = () => {
             {tabs.map((tab, idx) => (
               <button
                 key={tab}
-                className={`cursor-pointer pb-2 text-lg font-medium focus:outline-none ${
-                  activeTab === idx
+                className={`cursor-pointer pb-2 text-lg font-medium focus:outline-none ${activeTab === idx
                     ? "border-b-2 border-[#3B36FF] text-[#3B36FF]"
                     : "text-gray-400"
                 }`}
@@ -923,7 +935,7 @@ const AddUser: React.FC = () => {
 
           {/* Tab Content */}
           <div className="bg-white rounded-xl shadow p-8 relative">
-            {loading && (
+            {loadingUser && (
               <div className="absolute inset-0 bg-[rgba(255,255,255,0.6)] flex items-center justify-center z-10">
                 <div className="text-indigo-600 text-lg font-semibold">
                   Loading...
@@ -931,7 +943,10 @@ const AddUser: React.FC = () => {
               </div>
             )}
 
-            {error && !loading && (
+            {!userData && !loadingUser && (
+              <div className="text-center text-red-500 mb-4">Failed to fetch user details</div>
+            )}
+            {error && (
               <div className="text-center text-red-500 mb-4">{error}</div>
             )}
             {/* {!loading && ( */}
@@ -1304,20 +1319,20 @@ const AddUser: React.FC = () => {
                     <div className="flex flex-wrap gap-4 mb-2">
                       {/* Aadhaar Front */}
                       {(aadhaarFrontPreview ||
-                        fetchedUser?.document?.aadhaar?.frontUrl) && (
+                        userData?.document?.aadhaar?.frontUrl) && (
                         <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
                           <div className="flex items-center gap-2">
                             <FiDownload className="text-red-500 text-2xl" />
                             <span className="font-medium text-sm">Front</span>
                             <span className="ml-auto text-xs text-gray-400">
                               {aadhaarFrontPreview?.size ||
-                                (fetchedUser?.document?.aadhaar?.frontUrl
+                                  (userData?.document?.aadhaar?.frontUrl
                                   ? ""
                                   : "92 kb")}
                             </span>
                           </div>
                           {(aadhaarFrontPreview ||
-                            fetchedUser?.document?.aadhaar?.frontUrl) && (
+                              userData?.document?.aadhaar?.frontUrl) && (
                             <div className="flex flex-col items-center mt-2">
                               {aadhaarFrontPreview ? (
                                 aadhaarFrontPreview.isPdf ? (
@@ -1331,7 +1346,7 @@ const AddUser: React.FC = () => {
                                 )
                               ) : (
                                 <img
-                                  src={fetchedUser.document.aadhaar.frontUrl}
+                                      src={userData.document.aadhaar.frontUrl}
                                   alt="Aadhaar Front"
                                   className="w-16 h-16 object-cover rounded border mb-1"
                                 />
@@ -1349,7 +1364,7 @@ const AddUser: React.FC = () => {
                               onClick={() =>
                                 handleDownloadFile(
                                   aadhaarFrontPreview?.url ||
-                                    fetchedUser?.document?.aadhaar?.frontUrl,
+                                    userData?.document?.aadhaar?.frontUrl,
                                   aadhaarFrontPreview?.name ||
                                     "aadhaar_front.pdf"
                                 )
@@ -1365,7 +1380,7 @@ const AddUser: React.FC = () => {
                                   open: true,
                                   url:
                                     aadhaarFrontPreview?.url ||
-                                    fetchedUser?.document?.aadhaar?.frontUrl,
+                                      userData?.document?.aadhaar?.frontUrl,
                                   type: aadhaarFrontPreview?.isPdf
                                     ? "pdf"
                                     : "image",
@@ -1379,20 +1394,20 @@ const AddUser: React.FC = () => {
                       )}
                       {/* Aadhaar Back */}
                       {(aadhaarBackPreview ||
-                        fetchedUser?.document?.aadhaar?.backUrl) && (
+                        userData?.document?.aadhaar?.backUrl) && (
                         <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
                           <div className="flex items-center gap-2">
                             <FiDownload className="text-red-500 text-2xl" />
                             <span className="font-medium text-sm">Back</span>
                             <span className="ml-auto text-xs text-gray-400">
                               {aadhaarBackPreview?.size ||
-                                (fetchedUser?.document?.aadhaar?.backUrl
+                                  (userData?.document?.aadhaar?.backUrl
                                   ? ""
                                   : "92 kb")}
                             </span>
                           </div>
                           {(aadhaarBackPreview ||
-                            fetchedUser?.document?.aadhaar?.backUrl) && (
+                              userData?.document?.aadhaar?.backUrl) && (
                             <div className="flex flex-col items-center mt-2">
                               {aadhaarBackPreview ? (
                                 aadhaarBackPreview.isPdf ? (
@@ -1406,7 +1421,7 @@ const AddUser: React.FC = () => {
                                 )
                               ) : (
                                 <img
-                                  src={fetchedUser.document.aadhaar.backUrl}
+                                      src={userData.document.aadhaar.backUrl}
                                   alt="Aadhaar Back"
                                   className="w-16 h-16 object-cover rounded border mb-1"
                                 />
@@ -1424,7 +1439,7 @@ const AddUser: React.FC = () => {
                               onClick={() =>
                                 handleDownloadFile(
                                   aadhaarBackPreview?.url ||
-                                    fetchedUser?.document?.aadhaar?.backUrl,
+                                    userData?.document?.aadhaar?.backUrl,
                                   aadhaarBackPreview?.name || "aadhaar_back.pdf"
                                 )
                               }
@@ -1439,7 +1454,7 @@ const AddUser: React.FC = () => {
                                   open: true,
                                   url:
                                     aadhaarBackPreview?.url ||
-                                    fetchedUser?.document?.aadhaar?.backUrl,
+                                      userData?.document?.aadhaar?.backUrl,
                                   type: aadhaarBackPreview?.isPdf
                                     ? "pdf"
                                     : "image",
@@ -1497,19 +1512,19 @@ const AddUser: React.FC = () => {
                       Uploaded Documents
                     </div>
                     <div className="flex flex-wrap gap-4 mb-2">
-                      {(panPreview || fetchedUser?.document?.pan?.url) && (
+                      {(panPreview || userData?.document?.pan?.url) && (
                         <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
                           <div className="flex items-center gap-2">
                             <FiDownload className="text-red-500 text-2xl" />
                             <span className="font-medium text-sm">Front</span>
                             <span className="ml-auto text-xs text-gray-400">
                               {panPreview?.size ||
-                                (fetchedUser?.document?.pan?.url
+                                (userData?.document?.pan?.url
                                   ? ""
                                   : "92 kb")}
                             </span>
                           </div>
-                          {(panPreview || fetchedUser?.document?.pan?.url) && (
+                          {(panPreview || userData?.document?.pan?.url) && (
                             <div className="flex flex-col items-center mt-2">
                               {panPreview ? (
                                 panPreview.isPdf ? (
@@ -1523,7 +1538,7 @@ const AddUser: React.FC = () => {
                                 )
                               ) : (
                                 <img
-                                  src={fetchedUser.document.pan.url}
+                                  src={userData.document.pan.url}
                                   alt="PAN Front"
                                   className="w-16 h-16 object-cover rounded border mb-1"
                                 />
@@ -1541,7 +1556,7 @@ const AddUser: React.FC = () => {
                               onClick={() =>
                                 handleDownloadFile(
                                   panPreview?.url ||
-                                    fetchedUser?.document?.pan?.url,
+                                  userData?.document?.pan?.url,
                                   panPreview?.name || "pan_front.pdf"
                                 )
                               }
@@ -1556,7 +1571,7 @@ const AddUser: React.FC = () => {
                                   open: true,
                                   url:
                                     panPreview?.url ||
-                                    fetchedUser?.document?.pan?.url,
+                                    userData?.document?.pan?.url,
                                   type: panPreview?.isPdf ? "pdf" : "image",
                                 })
                               }
@@ -1604,20 +1619,20 @@ const AddUser: React.FC = () => {
                     <div className="flex flex-wrap gap-4 mb-2">
                       {/* License Front */}
                       {(licenseFrontPreview ||
-                        fetchedUser?.document?.dl?.frontUrl) && (
+                        userData?.document?.dl?.frontUrl) && (
                         <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
                           <div className="flex items-center gap-2">
                             <FiDownload className="text-red-500 text-2xl" />
                             <span className="font-medium text-sm">Front</span>
                             <span className="ml-auto text-xs text-gray-400">
                               {licenseFrontPreview?.size ||
-                                (fetchedUser?.document?.dl?.frontUrl
+                                  (userData?.document?.dl?.frontUrl
                                   ? ""
                                   : "92 kb")}
                             </span>
                           </div>
                           {(licenseFrontPreview ||
-                            fetchedUser?.document?.dl?.frontUrl) && (
+                              userData?.document?.dl?.frontUrl) && (
                             <div className="flex flex-col items-center mt-2">
                               {licenseFrontPreview ? (
                                 licenseFrontPreview.isPdf ? (
@@ -1631,7 +1646,7 @@ const AddUser: React.FC = () => {
                                 )
                               ) : (
                                 <img
-                                  src={fetchedUser.document.dl.frontUrl}
+                                      src={userData.document.dl.frontUrl}
                                   alt="License Front"
                                   className="w-16 h-16 object-cover rounded border mb-1"
                                 />
@@ -1649,7 +1664,7 @@ const AddUser: React.FC = () => {
                               onClick={() =>
                                 handleDownloadFile(
                                   licenseFrontPreview?.url ||
-                                    fetchedUser?.document?.dl?.frontUrl,
+                                    userData?.document?.dl?.frontUrl,
                                   licenseFrontPreview?.name ||
                                     "license_front.pdf"
                                 )
@@ -1665,7 +1680,7 @@ const AddUser: React.FC = () => {
                                   open: true,
                                   url:
                                     licenseFrontPreview?.url ||
-                                    fetchedUser?.document?.dl?.frontUrl,
+                                      userData?.document?.dl?.frontUrl,
                                   type: licenseFrontPreview?.isPdf
                                     ? "pdf"
                                     : "image",
@@ -1679,20 +1694,20 @@ const AddUser: React.FC = () => {
                       )}
                       {/* License Back */}
                       {(licenseBackPreview ||
-                        fetchedUser?.document?.dl?.backUrl) && (
+                        userData?.document?.dl?.backUrl) && (
                         <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
                           <div className="flex items-center gap-2">
                             <FiDownload className="text-red-500 text-2xl" />
                             <span className="font-medium text-sm">Back</span>
                             <span className="ml-auto text-xs text-gray-400">
                               {licenseBackPreview?.size ||
-                                (fetchedUser?.document?.dl?.backUrl
+                                  (userData?.document?.dl?.backUrl
                                   ? ""
                                   : "92 kb")}
                             </span>
                           </div>
                           {(licenseBackPreview ||
-                            fetchedUser?.document?.dl?.backUrl) && (
+                              userData?.document?.dl?.backUrl) && (
                             <div className="flex flex-col items-center mt-2">
                               {licenseBackPreview ? (
                                 licenseBackPreview.isPdf ? (
@@ -1706,7 +1721,7 @@ const AddUser: React.FC = () => {
                                 )
                               ) : (
                                 <img
-                                  src={fetchedUser.document.dl.backUrl}
+                                      src={userData.document.dl.backUrl}
                                   alt="License Back"
                                   className="w-16 h-16 object-cover rounded border mb-1"
                                 />
@@ -1724,7 +1739,7 @@ const AddUser: React.FC = () => {
                               onClick={() =>
                                 handleDownloadFile(
                                   licenseBackPreview?.url ||
-                                    fetchedUser?.document?.dl?.backUrl,
+                                    userData?.document?.dl?.backUrl,
                                   licenseBackPreview?.name || "license_back.pdf"
                                 )
                               }
@@ -1739,7 +1754,7 @@ const AddUser: React.FC = () => {
                                   open: true,
                                   url:
                                     licenseBackPreview?.url ||
-                                    fetchedUser?.document?.dl?.backUrl,
+                                      userData?.document?.dl?.backUrl,
                                   type: licenseBackPreview?.isPdf
                                     ? "pdf"
                                     : "image",
@@ -1785,10 +1800,210 @@ const AddUser: React.FC = () => {
               )}
               {activeTab === 3 && (
                 <div>
-                  <ComingSoon
-                    title="Vehicle Details"
-                    message="We're working hard to bring you this feature. Please check back later!"
-                  />
+                  {loadingAssignments ? (
+                    <div className="text-center text-gray-500 py-12">Loading vehicle assignments...</div>
+                  ) : vehicleAssignmentsError ? (
+                    <div className="text-center text-red-500 py-12">Failed to load vehicle assignments.</div>
+                  ) : vehicleAssignments.length > 0 ? (
+                    vehicleAssignments.map((assignment: any, idx: number) => {
+                      const vehicle = assignment.vehicle;
+                      if (!vehicle) return null;
+                      // Helper to determine file type for modal
+                      const getFileType = (url: string) => {
+                        if (!url) return 'image';
+                        const ext = url.split('.').pop()?.toLowerCase();
+                        if (ext === 'pdf') return 'pdf';
+                        return 'image';
+                      };
+                      return (
+                        <div key={assignment._id || idx} className="mb-8 p-6 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg border border-blue-100">
+                          <div className="mb-4 flex items-center">
+                            <span className="text-xl font-bold text-gray-900">Assigned Vehicle</span>
+                            <span className="ml-4 text-sm text-gray-500">Status: <b>{assignment.status}</b></span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <div className="mb-2"><b>Model:</b> {vehicle?.vehicleModel?.name || 'N/A'}</div>
+                              <div className="mb-2"><b>Type:</b> {vehicle?.vehicleType?.name || 'N/A'}</div>
+                              <div className="mb-2"><b>Number:</b> {vehicle?.vehicleNumber || 'N/A'}</div>
+                              <div className="mb-2"><b>Hub:</b> {vehicle?.hub?.name || 'N/A'}</div>
+                              <div className="mb-2"><b>City:</b> {vehicle?.city?.name || 'N/A'}</div>
+                              <div className="mb-2"><b>Assigned On:</b> {assignment.assignmentDate ? new Date(assignment.assignmentDate).toLocaleDateString() : 'N/A'}</div>
+                            </div>
+                            <div>
+                              <div className="mb-2"><b>RC Registration Date:</b> {vehicle?.rcRegistrationDate ? new Date(vehicle.rcRegistrationDate).toLocaleDateString() : 'N/A'}</div>
+                              <div className="mb-2"><b>RC Expiry Date:</b> {vehicle?.rcExpiryDate ? new Date(vehicle.rcExpiryDate).toLocaleDateString() : 'N/A'}</div>
+                              <div className="mb-2"><b>Fitness Certificate No.:</b> {vehicle?.fitnessCertificateNumber || 'N/A'}</div>
+                              <div className="mb-2"><b>Fitness Expiry:</b> {vehicle?.fitnessCertificateExpDate ? new Date(vehicle.fitnessCertificateExpDate).toLocaleDateString() : 'N/A'}</div>
+                            </div>
+                          </div>
+                          {/* Vehicle Documents */}
+                          <div className="mt-6">
+                            <div className="font-semibold mb-2">Vehicle Documents</div>
+                            {vehicle?.insurance?.documents ? (
+                              <div className="flex flex-wrap gap-4">
+                                {/* RC Document */}
+                                {vehicle.insurance.documents.rc && (
+                                  <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-sm">RC</span>
+                                      <span className="ml-auto text-xs text-gray-400">{vehicle.insurance.documents.rc.name}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center mt-2">
+                                      <span className="text-xs text-gray-500">{vehicle.insurance.documents.rc.url ? 'Available' : 'Not available'}</span>
+                                      {vehicle.insurance.documents.rc.size && (
+                                        <span className="text-xs text-gray-400">{(vehicle.insurance.documents.rc.size / 1024).toFixed(1)} KB</span>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2 mt-2">
+                                      {vehicle.insurance.documents.rc.url && (
+                                        <>
+                                          <button
+                                            className="text-blue-500 hover:text-blue-700"
+                                            title="Download RC"
+                                            onClick={() => handleDownloadFile(vehicle.insurance.documents.rc.url, vehicle.insurance.documents.rc.name || 'rc.pdf')}
+                                          >
+                                            <FiDownload />
+                                          </button>
+                                          <button
+                                            className="text-gray-500 hover:text-gray-700"
+                                            title="View RC"
+                                            onClick={() => setPreviewModal({
+                                              open: true,
+                                              url: vehicle.insurance.documents.rc.url,
+                                              type: getFileType(vehicle.insurance.documents.rc.url),
+                                            })}
+                                          >
+                                            <FiEye />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Fitness Certificate Document */}
+                                {vehicle.insurance.documents.fitnessCertificate && (
+                                  <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-sm">Fitness Certificate</span>
+                                      <span className="ml-auto text-xs text-gray-400">{vehicle.insurance.documents.fitnessCertificate.name}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center mt-2">
+                                      <span className="text-xs text-gray-500">{vehicle.insurance.documents.fitnessCertificate.url ? 'Available' : 'Not available'}</span>
+                                      {vehicle.insurance.documents.fitnessCertificate.size && (
+                                        <span className="text-xs text-gray-400">{(vehicle.insurance.documents.fitnessCertificate.size / 1024).toFixed(1)} KB</span>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2 mt-2">
+                                      {vehicle.insurance.documents.fitnessCertificate.url && (
+                                        <>
+                                          <button
+                                            className="text-blue-500 hover:text-blue-700"
+                                            title="Download Fitness Certificate"
+                                            onClick={() => handleDownloadFile(vehicle.insurance.documents.fitnessCertificate.url, vehicle.insurance.documents.fitnessCertificate.name || 'fitness_certificate.pdf')}
+                                          >
+                                            <FiDownload />
+                                          </button>
+                                          <button
+                                            className="text-gray-500 hover:text-gray-700"
+                                            title="View Fitness Certificate"
+                                            onClick={() => setPreviewModal({
+                                              open: true,
+                                              url: vehicle.insurance.documents.fitnessCertificate.url,
+                                              type: getFileType(vehicle.insurance.documents.fitnessCertificate.url),
+                                            })}
+                                          >
+                                            <FiEye />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Insurance Document */}
+                                {vehicle.insurance.documents.insurance && (
+                                  <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-sm">Insurance</span>
+                                      <span className="ml-auto text-xs text-gray-400">{vehicle.insurance.documents.insurance.name}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center mt-2">
+                                      <span className="text-xs text-gray-500">{vehicle.insurance.documents.insurance.url ? 'Available' : 'Not available'}</span>
+                                      {vehicle.insurance.documents.insurance.size && (
+                                        <span className="text-xs text-gray-400">{(vehicle.insurance.documents.insurance.size / 1024).toFixed(1)} KB</span>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2 mt-2">
+                                      {vehicle.insurance.documents.insurance.url && (
+                                        <>
+                                          <button
+                                            className="text-blue-500 hover:text-blue-700"
+                                            title="Download Insurance"
+                                            onClick={() => handleDownloadFile(vehicle.insurance.documents.insurance.url, vehicle.insurance.documents.insurance.name || 'insurance.pdf')}
+                                          >
+                                            <FiDownload />
+                                          </button>
+                                          <button
+                                            className="text-gray-500 hover:text-gray-700"
+                                            title="View Insurance"
+                                            onClick={() => setPreviewModal({
+                                              open: true,
+                                              url: vehicle.insurance.documents.insurance.url,
+                                              type: getFileType(vehicle.insurance.documents.insurance.url),
+                                            })}
+                                          >
+                                            <FiEye />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-gray-400">No documents available</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center text-gray-500 py-12 flex flex-col items-center gap-4">
+                      No vehicle assigned to this user.
+                      <Button variant="primary" onClick={() => setShowAssignModal(true)}>
+                        Assign Vehicle
+                      </Button>
+                      <Modal open={showAssignModal} onClose={() => setShowAssignModal(false)}>
+                        <div className="p-6 w-80">
+                          <h3 className="mb-4 text-lg font-semibold">Assign Vehicle</h3>
+                          <div className="mb-4">
+                            <label className="block mb-2 text-sm font-medium text-gray-700">Select Vehicle</label>
+                            <select
+                              className="w-full border rounded-lg p-2"
+                              value={selectedVehicle}
+                              onChange={e => setSelectedVehicle(e.target.value)}
+                              disabled={loadingAvailableVehicles}
+                            >
+                              <option value="">-- Select Vehicle --</option>
+                              {availableVehicles.map((v: any) => (
+                                <option key={v._id || v.vehicleNumber} value={v.vehicleNumber}>
+                                  {v.vehicleNumber} - {v.vehicleModel?.name || "Model"} - {v.vehicleType?.name || "Type"}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex space-x-3 mt-4">
+                            <Button variant="secondary" onClick={() => setShowAssignModal(false)} disabled={assignLoading}>
+                              Cancel
+                            </Button>
+                            <Button variant="primary" onClick={handleAssignVehicle} disabled={!selectedVehicle || assignLoading}>
+                              {assignLoading ? "Assigning..." : "Assign"}
+                            </Button>
+                          </div>
+                        </div>
+                      </Modal>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === 4 && (
@@ -1878,45 +2093,7 @@ const AddUser: React.FC = () => {
         )}
       </Modal>
 
-      {/* Rejection Confirmation Modal */}
-      {/* <Modal open={showRejectModal} onClose={() => setShowRejectModal(false)}>
-        <div className="p-6">
-          <h3 className="mb-4 text-lg font-semibold">Confirm Rejection</h3>
-          <p className="mb-4 text-gray-700">
-            Are you sure you want to reject this user?
-          </p>
-
-          <div className="mb-4">
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Rejection Reason (Optional)
-            </label>
-            <textarea
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Enter reason for rejection..."
-              className="w-full rounded-lg border border-gray-300 p-3 text-sm"
-              rows={4}
-            />
-          </div>
-
-          <div className="flex space-x-3">
-            <Button
-              variant="secondary"
-              onClick={() => setShowRejectModal(false)}
-              disabled={isRejecting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleConfirmReject}
-              disabled={isRejecting}
-            >
-              {isRejecting ? 'Rejecting...' : 'Confirm Reject'}
-            </Button>
-          </div>
-        </div>
-      </Modal> */}
+     
 
       <RejectUserModal
         isRejecting={createOrUpdateDocRemark.isPending}

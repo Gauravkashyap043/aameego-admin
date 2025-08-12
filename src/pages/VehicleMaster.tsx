@@ -60,7 +60,9 @@ const VehicleMaster: React.FC = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
-  const { data: vehiclePage, isLoading: loadingVehicles } = useVehicleList(page, limit, search);
+  const [submittedSearch, setSubmittedSearch] = useState('');
+
+  const { data: vehiclePage, isLoading: loadingVehicles } = useVehicleList(page, limit, submittedSearch);
   const vehicles = (vehiclePage as VehiclePage | undefined)?.items ?? [];
   const total = (vehiclePage as VehiclePage | undefined)?.total ?? 0;
   // const totalPages = (vehiclePage as VehiclePage | undefined)?.totalPages ?? 1;
@@ -229,7 +231,15 @@ const VehicleMaster: React.FC = () => {
             onActionButtonClick={() => navigate('/add-vehicle')}
             showSearch
             searchValue={search}
-            onSearchChange={(v) => { setPage(1); setSearch(v); }}
+            onSearchChange={(v) => {
+              setSearch(v);
+              if (v.trim() === '') {
+                setPage(1);
+                setSubmittedSearch('');
+              }
+            }}
+            searchButtonLabel="Search"
+            onSearchSubmit={() => { setPage(1); setSubmittedSearch(search); }}
             pagination={{
               page,
               limit,

@@ -310,26 +310,53 @@ const AddVehicle: React.FC = () => {
 
   const handleDownloadQR = () => {
     const svg = qrRef.current?.querySelector('svg');
-    if (!svg) return;
+    if (!svg || !form.vehicleNumber) return;
+    
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(svg);
+    
+    // Create canvas with margins
+    const margin = 40;
+    const qrSize = 256;
+    const textHeight = 60;
     const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) return;
+    
+    // Set canvas size with margins
+    canvas.width = qrSize + (margin * 2);
+    canvas.height = qrSize + textHeight + (margin * 2);
+    
+    // Fill background with white
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Create image from SVG
     const img = new window.Image();
     img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0);
-        const pngFile = canvas.toDataURL('image/png');
-        const downloadLink = document.createElement('a');
-        downloadLink.href = pngFile;
-        downloadLink.download = `vehicle-qr-${form.vehicleNumber || 'unknown'}.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-      }
+      // Draw QR code in center
+      ctx.drawImage(img, margin, margin, qrSize, qrSize);
+      
+      // Add vehicle number text below QR code
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 24px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      
+      // Draw vehicle number
+      ctx.fillText(`Vehicle: ${form.vehicleNumber}`, canvas.width / 2, margin + qrSize + 10);
+      
+      // Convert to PNG and download
+      const pngFile = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngFile;
+      downloadLink.download = `vehicle-qr-${form.vehicleNumber}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
     };
+    
     img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
   };
 

@@ -1,4 +1,5 @@
 export const formatTableData = (users: any[] = []) => {
+  console.log('formatTableData - raw users:', users);
   return users.map((user) => {
     // Map status values to display text and colors
     let statusText = "Pending";
@@ -30,7 +31,7 @@ export const formatTableData = (users: any[] = []) => {
       statusColor = "green";
     }
 
-    return {
+    const formattedUser = {
       id: user._id,
       name: user.name || "N/A",
       profileCode: user.profileCode,
@@ -40,6 +41,24 @@ export const formatTableData = (users: any[] = []) => {
       statusColor: statusColor,
       lastLogin: user.authRef?.lastLoginAt ? user.authRef.lastLoginAt : null,
       profilePicture: user.profilePicture || "",
+      // Additional fields for riders
+      aadharNumber: user.document?.aadhaar?.ocrFront?.aadharNumber || user.document?.aadhaar?.ocrBack?.aadharNumber || null,
+      drivingLicenseNumber: user.document?.dl?.ocrFront?.dlNumber || null,
+      dateOfBirth: user.dob || null,
+      onboardDate: user.createdAt || null,
+      address: user.addressRef || null,
     };
+    
+    console.log('formatTableData - formatted user:', {
+      id: user._id,
+      name: user.name,
+      aadharNumber: user.document?.aadhaar?.ocrFront?.aadharNumber || user.document?.aadhaar?.ocrBack?.aadharNumber,
+      drivingLicenseNumber: user.document?.dl?.ocrFront?.dlNumber,
+      dateOfBirth: user.dob,
+      onboardDate: user.createdAt,
+      address: user.addressRef,
+    });
+    
+    return formattedUser;
   });
 };

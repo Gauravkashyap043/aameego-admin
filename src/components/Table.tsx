@@ -34,6 +34,8 @@ type TableProps = {
   searchPlaceholder?: string;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  searchButtonLabel?: string;
+  onSearchSubmit?: () => void;
   statusFilter?: boolean;
   customFilters?: {
     label: string;
@@ -56,6 +58,8 @@ const Table: React.FC<TableProps> = ({
   searchPlaceholder = "Search",
   searchValue,
   onSearchChange,
+  searchButtonLabel,
+  onSearchSubmit,
   statusFilter = false,
   customFilters = [],
   pagination
@@ -146,8 +150,23 @@ const Table: React.FC<TableProps> = ({
                   setSearch(e.target.value);
                 }
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && typeof onSearchSubmit === 'function') {
+                  e.preventDefault();
+                  onSearchSubmit();
+                }
+              }}
               className="w-56 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+          )}
+          {showSearch && typeof onSearchSubmit === 'function' && (
+            <button
+              type="button"
+              onClick={onSearchSubmit}
+              className="px-3 py-2 bg-indigo-600 text-white rounded font-semibold hover:bg-indigo-700"
+            >
+              {searchButtonLabel ?? 'Search'}
+            </button>
           )}
           
           {customFilters.map((filter, index) => (

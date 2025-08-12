@@ -8,6 +8,7 @@ import Button from "../components/Button";
 import InputField from "../components/InputField";
 import Modal from "../components/Modal";
 import ActionDropdown from "../components/ActionDropdown";
+import SearchableSelect from "../components/SearchableSelect";
 import api from "../services/api";
 import { ProfileCode } from "../components/general";
 import { formatTableData } from "../utils/helper";
@@ -101,7 +102,7 @@ const UserManagement: React.FC = () => {
   };
 
   const supervisorOptions = (data?.supervisors || []).map((sup: any) => ({
-    label: sup.name + (sup.profileCode ? ` (${sup.profileCode})` : ""),
+    label: `${sup.name}${sup.profileCode ? ` (${sup.profileCode})` : ""}${sup.authRef?.identifier ? ` - ${sup.authRef.identifier}` : ""}`,
     value: sup._id,
   }));
 
@@ -200,6 +201,57 @@ const UserManagement: React.FC = () => {
         return `${day}-${month}-${year} ${hours}:${minutes}`;
       },
     },
+    // Additional fields for riders only
+    ...(activeTab === "rider" ? [
+      {
+        key: "aadharNumber",
+        title: "Aadhar Number",
+        render: (value: any) => value || "-",
+      },
+      {
+        key: "drivingLicenseNumber",
+        title: "DL Number",
+        render: (value: any) => value || "-",
+      },
+      {
+        key: "dateOfBirth",
+        title: "Date of Birth",
+        render: (value: any) => {
+          if (!value) return "-";
+         return value;
+        },
+      },
+      {
+        key: "onboardDate",
+        title: "Onboard Date",
+        render: (value: any) => {
+          if (!value) return "-";
+          const dateObj = new Date(value);
+          const day = String(dateObj.getDate()).padStart(2, "0");
+          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const year = dateObj.getFullYear();
+          return `${day}-${month}-${year}`;
+        },
+      },
+      {
+        key: "address",
+        title: "Address",
+        render: (value: any, record: any) => {
+          if (!value && !record.address) return "-";
+          const address = value || record.address;
+          if (typeof address === "string") return address;
+          if (typeof address === "object") {
+            const parts = [];
+            if (address.address) parts.push(address.address);
+            if (address.cityDistrict) parts.push(address.cityDistrict);
+            if (address.state) parts.push(address.state);
+            if (address.pinCode) parts.push(address.pinCode);
+            return parts.length > 0 ? parts.join(", ") : "-";
+          }
+          return "-";
+        },
+      },
+    ] : []),
     {
       key: "actions",
       title: "Action",
@@ -277,13 +329,12 @@ const UserManagement: React.FC = () => {
               placeholder="Enter Rider Profile Code"
               required
             />
-            <InputField
+            <SearchableSelect
               label="Select Supervisor"
-              name="supervisorId"
-              type="select"
               value={assignForm.supervisorId}
-              onChange={handleAssignChange}
+              onChange={(value) => setAssignForm(prev => ({ ...prev, supervisorId: value }))}
               options={supervisorOptions}
+              placeholder={`Search and select a supervisor (${supervisorOptions.length} available)...`}
               required
             />
             {assignError && (

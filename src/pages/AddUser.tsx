@@ -1883,7 +1883,17 @@ const AddUser: React.FC = () => {
                       {vehicleAssignments.length > 0 && (
                         <div className="mb-8">
                           <h3 className="text-lg font-semibold mb-4 text-gray-800">Current Vehicle Assignment</h3>
-
+                          {vehicleAssignments.filter((assignment: any) => assignment.status === 'assigned').length === 0 && (
+                            <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                              <div className="text-gray-500 mb-4">
+                                <div className="text-lg font-medium mb-2">No vehicle currently assigned</div>
+                                <div className="text-sm">This user is not currently assigned to any vehicle.</div>
+                              </div>
+                              <Button variant="primary" onClick={() => setShowAssignModal(true)}>
+                                Assign New Vehicle
+                              </Button>
+                            </div>
+                          )}
                           {vehicleAssignments
                             .filter((assignment: any) => assignment.status === 'assigned')
                             .map((assignment: any, idx: number) => {
@@ -2091,17 +2101,7 @@ const AddUser: React.FC = () => {
                             })}
                         </div>
                       )}
-                      {vehicleAssignments.filter((assignment: any) => assignment.status === 'assigned').length === 0 && (
-                        <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                          <div className="text-gray-500 mb-4">
-                            <div className="text-lg font-medium mb-2">No vehicle currently assigned</div>
-                            <div className="text-sm">This user is not currently assigned to any vehicle.</div>
-                          </div>
-                          <Button variant="primary" onClick={() => setShowAssignModal(true)}>
-                            Assign New Vehicle
-                          </Button>
-                        </div>
-                      )}
+
                       {/* Vehicle History */}
                       {vehicleAssignments.length > 0 && (
                         <div className="mb-8">

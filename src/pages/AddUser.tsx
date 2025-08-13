@@ -2287,69 +2287,202 @@ const AddUser: React.FC = () => {
                 </div>
               )}
               {activeTab === 4 && (
-                <div className="space-y-4">
-                  {role &&
-                    assignedUser.map((item: any) => {
-                      const userData: any =
-                        role === "SUPERVISOR"
-                          ? item["rider"]
-                          : item["supervisor"];
+                <div>
+                  <div className="mb-4 md:mb-6 xl:mb-8">
+                    <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-gray-800 mb-2">  
+                      {role === "SUPERVISOR" ? "Assigned Riders" : "Assigned Supervisor"}
+                    </h3>
+                    <p className="text-gray-600 text-sm md:text-base xl:text-lg">
+                      {role === "SUPERVISOR" 
+                        ? "Manage the riders assigned to this supervisor" 
+                        : "View the supervisor assigned to this rider"}
+                    </p>
+                  </div>
 
-                      return (
-                        // ...existing code...
-                        <div
-                          key={item._id}
-                          className="p-4 rounded-xl shadow-lg bg-white flex flex-col md:flex-row items-center justify-between gap-4 transition hover:shadow-xl"
-                        >
+                  {assignedUser.length === 0 ? (
+                    <div className="text-center py-8 md:py-12 xl:py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300">
+                      <div className="mb-4">
+                        <div className="w-12 h-12 md:w-16 md:h-16 xl:w-20 xl:h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                          <svg className="w-6 h-6 md:w-8 md:h-8 xl:w-10 xl:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-base md:text-lg xl:text-xl font-semibold text-gray-700 mb-2">
+                          No {role === "SUPERVISOR" ? "Riders" : "Supervisor"} Assigned
+                        </h4>
+                        <p className="text-sm md:text-base xl:text-lg text-gray-500 px-4">
+                          {role === "SUPERVISOR" 
+                            ? "This supervisor doesn't have any riders assigned yet." 
+                            : "This rider doesn't have a supervisor assigned yet."}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:gap-6 xl:gap-8">
+                      {assignedUser.map((item: any) => {
+                        const userData: any =
+                          role === "SUPERVISOR"
+                            ? item["rider"]
+                            : item["supervisor"];
+
+                        return (
                           <div
-                            className="flex items-center gap-4 w-full md:w-auto cursor-pointer"
-                            onClick={() => handleProfileClick(userData._id)}
+                            key={item._id}
+                            className="group relative bg-white rounded-xl md:rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                           >
-                            <img
-                              src={userData.profilePicture}
-                              alt="Supervisor"
-                              className="w-14 h-14 rounded-full object-cover border-2 border-blue-100 shadow"
-                            />
-                            <div>
-                              <button
-                                className="text-base cursor-pointer font-semibold text-blue-600 hover:underline focus:outline-none transition"
-                                title="View Profile"
-                              >
-                                {userData.name}
-                              </button>
-                              <div className="text-xs text-gray-500 mt-1">
-                                <span className="font-medium">Code:</span>{" "}
-                                {userData.profileCode}
+                            {/* Background Gradient */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            
+                            <div className="relative p-4 md:p-6 xl:p-8">
+                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6 xl:gap-8">
+                                {/* Profile Section */}
+                                <div 
+                                  className="flex items-center gap-4 xl:gap-6 cursor-pointer flex-1"
+                                  onClick={() => handleProfileClick(userData._id)}
+                                >
+                                  {/* Avatar */}
+                                  <div className="relative">
+                                    <div className="w-14 h-14 md:w-16 md:h-16 xl:w-20 xl:h-20 rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 p-0.5">
+                                      <div className="w-full h-full rounded-xl md:rounded-2xl overflow-hidden">
+                                        {userData.profilePicture ? (
+                                          <img
+                                            src={userData.profilePicture}
+                                            alt={userData.name}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                                            <span className="text-blue-600 font-bold text-base md:text-lg xl:text-xl">
+                                              {userData.name?.charAt(0)?.toUpperCase()}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {/* Online Status Indicator */}
+                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 xl:w-7 xl:h-7 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 xl:w-2.5 xl:h-2.5 bg-white rounded-full"></div>
+                                    </div>
+                                  </div>
+
+                                  {/* User Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 xl:gap-4 mb-3 xl:mb-4">
+                                      <h4 className="text-lg md:text-xl xl:text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors truncate">
+                                        {userData.name}
+                                      </h4>
+                                      <span className={`px-2 md:px-3 xl:px-4 py-1 xl:py-1.5 rounded-full text-xs xl:text-sm font-semibold uppercase tracking-wider self-start sm:self-auto ${
+                                        userData.status === 'verified' 
+                                          ? 'bg-green-100 text-green-700 border border-green-200' 
+                                          : userData.status === 'pending'
+                                          ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                                          : 'bg-red-100 text-red-700 border border-red-200'
+                                      }`}>
+                                        {userData.status}
+                                      </span>
+                                    </div>
+
+                                    {/* Info Grid */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-2 md:gap-3 xl:gap-4">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 bg-blue-400 rounded-full"></div>
+                                        <span className="text-sm xl:text-base text-gray-600">
+                                          <span className="font-medium">ID:</span> {userData.profileCode}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 bg-purple-400 rounded-full"></div>
+                                        <span className="text-sm xl:text-base text-gray-600">
+                                          <span className="font-medium">Language:</span> {userData.language || 'Not specified'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 bg-green-400 rounded-full"></div>
+                                        <span className="text-sm xl:text-base text-gray-600">
+                                          <span className="font-medium">Phone:</span> {userData.authRef?.identifier || 'Not available'}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 bg-orange-400 rounded-full"></div>
+                                        <span className="text-sm xl:text-base text-gray-600">
+                                          <span className="font-medium">Assigned:</span> {new Date(item.assignedAt).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Assignment Time */}
+                                    <div className="mt-2 md:mt-3 xl:mt-4 flex items-center gap-2 text-xs text-gray-500">
+                                      <svg className="w-3 h-3 md:w-4 md:h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <span className="text-xs md:text-sm xl:text-base">Assigned on {new Date(item.assignedAt).toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3 xl:gap-4 w-full sm:w-auto">
+                                  <button
+                                    onClick={() => handleProfileClick(userData._id)}
+                                    className="px-3 md:px-4 xl:px-6 py-2 xl:py-3 bg-blue-50 text-blue-600 rounded-lg md:rounded-xl border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all duration-200 font-medium text-sm xl:text-base flex items-center justify-center gap-2"
+                                    title="View Profile"
+                                  >
+                                    <svg className="w-4 h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <span className="hidden sm:inline">View Profile</span>
+                                    <span className="sm:hidden">View</span>
+                                  </button>
+                                  
+                                  <button
+                                    className="px-3 md:px-4 xl:px-6 py-2 xl:py-3 bg-red-50 text-red-600 rounded-lg md:rounded-xl border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all duration-200 font-medium text-sm xl:text-base flex items-center justify-center gap-2"
+                                    // onClick={() => handleUnassign(userData._id)}
+                                    title="Unassign"
+                                  >
+                                    <svg className="w-4 h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Unassign
+                                  </button>
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500">
-                                <span className="font-medium">Status:</span>{" "}
-                                {userData.status}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                <span className="font-medium">Language:</span>{" "}
-                                {userData.language}
-                              </div>
-                              <div className="text-xs text-gray-400 mt-1">
-                                <span className="font-medium">
-                                  Assigned At:
-                                </span>{" "}
-                                {new Date(item.assignedAt).toLocaleString()}
+
+                              {/* Quick Stats Bar */}
+                              <div className="mt-4 md:mt-6 xl:mt-8 pt-3 md:pt-4 xl:pt-6 border-t border-gray-100">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2 xl:gap-4 text-sm">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 xl:gap-6">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 md:w-3 md:h-3 xl:w-3.5 xl:h-3.5 bg-blue-400 rounded-full"></div>
+                                      <span className="text-gray-600 text-xs md:text-sm xl:text-base">Active since {new Date(item.assignedAt).getFullYear()}</span>
+                                    </div>
+                                    {userData.authRef?.lastLoginAt && (
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 md:w-3 md:h-3 xl:w-3.5 xl:h-3.5 bg-green-400 rounded-full"></div>
+                                        <span className="text-gray-600 text-xs md:text-sm xl:text-base">
+                                          Last seen {new Date(userData.authRef.lastLoginAt).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-1 xl:gap-2">
+                                    <span className="text-gray-400 text-xs md:text-sm xl:text-base">Role:</span>
+                                    <span className="font-medium text-gray-700 capitalize text-xs md:text-sm xl:text-base">
+                                      {role === "SUPERVISOR" ? "Rider" : "Supervisor"}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                          <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0">
-                            <button
-                              className="px-4 py-2 bg-red-50 text-red-600 rounded-lg border border-red-200 hover:bg-red-100 transition font-medium"
-                              // onClick={() => handleUnassign(userData._id)}
-                              title="Unassign"
-                            >
-                              Unassign
-                            </button>
-                          </div>
-                        </div>
-                        // ...existing code...
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </>

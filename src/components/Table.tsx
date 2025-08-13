@@ -80,14 +80,6 @@ const Table: React.FC<TableProps> = ({
     return matchesSearch && matchesStatus;
   });
 
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow p-8 flex items-center justify-center">
-        <div className="text-indigo-600">Loading...</div>
-      </div>
-    );
-  }
-
   const totalPages = pagination ? Math.max(1, Math.ceil(pagination.total / pagination.limit)) : 1;
   const currentPage = pagination ? pagination.page : 1;
   const currentLimit = pagination ? pagination.limit : filteredData.length || 10;
@@ -231,20 +223,43 @@ const Table: React.FC<TableProps> = ({
           </tr>
         </thead>
         <tbody>
-          {filteredData.map((row, idx) => (
-            <tr key={row.id} className={idx % 2 === 1 ? 'bg-gray-50' : ''}>
-              {showCheckbox && (
-                <td className="p-4 border-b border-r border-gray-200">
-                  <input type="checkbox" className="accent-primary" />
-                </td>
-              )}
-              {columns.map((column) => (
-                <td key={column.key} className="p-4 border-b border-r border-gray-200">
-                  {column.render ? column.render(row[column.key], row) : row[column.key]}
-                </td>
-              ))}
+          {isLoading ? (
+            <tr>
+              <td 
+                colSpan={columns.length + (showCheckbox ? 1 : 0)} 
+                className="p-8 text-center border-b border-gray-200"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                  <span className="text-indigo-600">Loading...</span>
+                </div>
+              </td>
             </tr>
-          ))}
+          ) : filteredData.length === 0 ? (
+            <tr>
+              <td 
+                colSpan={columns.length + (showCheckbox ? 1 : 0)} 
+                className="p-8 text-center text-gray-500 border-b border-gray-200"
+              >
+                No data available
+              </td>
+            </tr>
+          ) : (
+            filteredData.map((row, idx) => (
+              <tr key={row.id} className={idx % 2 === 1 ? 'bg-gray-50' : ''}>
+                {showCheckbox && (
+                  <td className="p-4 border-b border-r border-gray-200">
+                    <input type="checkbox" className="accent-primary" />
+                  </td>
+                )}
+                {columns.map((column) => (
+                  <td key={column.key} className="p-4 border-b border-r border-gray-200">
+                    {column.render ? column.render(row[column.key], row) : row[column.key]}
+                  </td>
+                ))}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
 
@@ -252,10 +267,20 @@ const Table: React.FC<TableProps> = ({
       <div className="flex items-center justify-between p-4 border-t text-xs text-gray-600">
         {pagination ? (
           <div>
-            Showing {showingStart}–{showingEnd} of {pagination.total}
+            {isLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              `Showing ${showingStart}–${showingEnd} of ${pagination.total}`
+            )}
           </div>
         ) : (
-          <div>Showing {filteredData.length} entries</div>
+          <div>
+            {isLoading ? (
+              <span className="text-gray-400">Loading...</span>
+            ) : (
+              `Showing ${filteredData.length} entries`
+            )}
+          </div>
         )}
         <div className="flex items-center gap-2">
           {pagination && (
@@ -263,6 +288,7 @@ const Table: React.FC<TableProps> = ({
               className="px-2 py-1 border rounded"
               value={currentLimit}
               onChange={(e) => pagination.onLimitChange && pagination.onLimitChange(parseInt(e.target.value, 10))}
+              disabled={isLoading}
             >
               {(pagination.pageSizeOptions ?? [10, 20, 50]).map((n) => (
                 <option key={n} value={n}>{n} / page</option>
@@ -271,7 +297,7 @@ const Table: React.FC<TableProps> = ({
           )}
           <button
             className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-            disabled={!pagination || currentPage <= 1}
+            disabled={!pagination || currentPage <= 1 || isLoading}
             onClick={() => pagination && pagination.onPageChange(Math.max(1, currentPage - 1))}
           >
             &lt;
@@ -287,8 +313,9 @@ const Table: React.FC<TableProps> = ({
                       it === currentPage
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
-                    onClick={() => pagination.onPageChange(it)}
+                    } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => !isLoading && pagination.onPageChange(it)}
+                    disabled={isLoading}
                   >
                     {it}
                   </button>
@@ -301,7 +328,7 @@ const Table: React.FC<TableProps> = ({
             )}
           <button
             className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-            disabled={!pagination || currentPage >= totalPages}
+            disabled={!pagination || currentPage >= totalPages || isLoading}
             onClick={() => pagination && pagination.onPageChange(Math.min(totalPages, currentPage + 1))}
           >
             &gt;

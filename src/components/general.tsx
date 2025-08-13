@@ -12,7 +12,7 @@ export function ProfileCode({ record }: { record: { profileCode: string } }) {
 
   return (
     <div className="text-xs text-gray-500 flex items-center space-x-1">
-      <span>Profile Code–</span>
+      {/* <span>Profile Code–</span> */}
       <span className="font-bold">{record.profileCode}</span>
       <span
         className="ml-1 cursor-pointer text-gray-400 hover:text-black transition"

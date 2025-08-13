@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
-import Table from '../components/Table';
+import CollapsibleTable from '../components/CollapsibleTable';
+import type { CollapsibleColumn } from '../components/CollapsibleTable';
 import Button from '../components/Button';
 import ActionDropdown from '../components/ActionDropdown';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleList, type VehiclePage } from '../hooks/useVehicles';
 import QRCode from 'react-qr-code';
-import { FiTruck, FiFileText, FiPackage, FiTool, FiAlertTriangle } from 'react-icons/fi';
+import { FiTruck, FiFileText, FiPackage, FiTool, FiAlertTriangle, FiUser, FiMapPin } from 'react-icons/fi';
 
 const summaryCards = [
   {
@@ -96,28 +97,25 @@ const VehicleMaster: React.FC = () => {
     }, 100); // Wait for QR to render
   };
 
-  // Define columns for the vehicle table
-  const columns = [
-    { key: 'vehicleNumber', title: 'Vehicle Number' },
-    { key: 'city', title: 'City', render: (value: any) => value?.name || '-' },
-    { key: 'hub', title: 'Hub', render: (value: any) => value?.name || '-' },
-    { key: 'supervisor', title: 'Supervisor', render: (value: any) => value?.name || "_"},
-    { key: 'vehicleType', title: 'Type', render: (value: any) => value?.name || '-' },
-    { key: 'oem', title: 'OEM', render: (value: any) => value?.name || '-' },
-    { key: 'vehicleModel', title: 'Model', render: (value: any) => value?.name || '-' },
-    { key: 'vehicleRCNumber', title: 'RC Number' },
+
+
+  // Define collapsible columns for the vehicle table
+  const collapsibleColumns: CollapsibleColumn[] = [
     {
-      key: 'currentAssignment',
-      title: 'Assigned To',
-      render: (value: any) => {
-        if (!value) return '-';
-        const rider = value.rider;
-        return rider ? `${rider?.accountRef?.name || rider.identifier} (${rider.identifier || 'No phone'})` : 'Unknown Rider';
-      },
+      key: 'vehicleNumber',
+      title: 'Vehicle Number',
+      essential: true,
+      render: (value) => (
+        <div className="flex items-center gap-2">
+          <FiTruck className="text-indigo-600 w-4 h-4" />
+          <span className="font-semibold text-gray-900">{value}</span>
+        </div>
+      )
     },
     {
       key: 'numberPlateStatus',
-      title: 'Number Plate Status',
+      title: 'Status',
+      essential: true,
       render: (value: any) => {
         let color = 'bg-yellow-100 text-yellow-800 border-yellow-300';
         let dot = 'bg-yellow-400';
@@ -139,11 +137,45 @@ const VehicleMaster: React.FC = () => {
         );
       },
     },
-    { key: 'invoiceAmount', title: 'Invoice Amount' },
-    { key: 'deliveryDate', title: 'Delivery Date', render: (value: any) => value ? new Date(value).toLocaleDateString() : '-' },
+    {
+      key: 'currentAssignment',
+      title: 'Assigned To',
+      essential: true,
+      render: (value: any) => {
+        if (!value) return <span className="text-gray-400">-</span>;
+        const rider = value.rider;
+        if (!rider) return <span className="text-gray-400">Unknown Rider</span>;
+        
+        const name = rider?.accountRef?.name || rider.name || 'No Name';
+        const phone = rider?.accountRef?.identifier || rider.identifier || 'No Phone';
+        // const profileCode = rider?.profileCode || rider.profileCode || 'No Code';
+        
+        return (
+          <div className="flex items-center justify-center gap-2">
+            <FiUser className="text-blue-600 w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900">{name}</span>
+              <span className="text-xs text-gray-500">{phone}</span>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'city',
+      title: 'City',
+      essential: true,
+      render: (value: any) => (
+        <div className="flex items-center gap-1">
+          <FiMapPin className="text-gray-400 w-3 h-3" />
+          <span>{value?.name || '-'}</span>
+        </div>
+      )
+    },
     {
       key: 'actions',
       title: 'Action',
+      essential: true,
       render: (_value: any, record: any) => (
         <ActionDropdown
           items={[
@@ -158,6 +190,53 @@ const VehicleMaster: React.FC = () => {
           ]}
         />
       ),
+    },
+    {
+      key: 'vehicleType',
+      title: 'Type',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'vehicleModel',
+      title: 'Model',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'hub',
+      title: 'Hub',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'supervisor',
+      title: 'Supervisor',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'oem',
+      title: 'OEM',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'vehicleRCNumber',
+      title: 'RC Number',
+      essential: false
+    },
+    {
+      key: 'invoiceAmount',
+      title: 'Invoice Amount',
+      essential: false,
+      render: (value: any) => value ? `₹${value}` : '-'
+    },
+    {
+      key: 'deliveryDate',
+      title: 'Delivery Date',
+      essential: false,
+      render: (value: any) => value ? new Date(value).toLocaleDateString() : '-'
     },
   ];
 
@@ -223,8 +302,8 @@ const VehicleMaster: React.FC = () => {
         </div>
         {/* Table */}
         {activeTab === 0 && (
-          <Table
-            columns={columns}
+          <CollapsibleTable
+            columns={collapsibleColumns}
             data={tableData}
             isLoading={loadingVehicles}
             actionButtonLabel="+ New Vehicle"
@@ -240,6 +319,7 @@ const VehicleMaster: React.FC = () => {
             }}
             searchButtonLabel="Search"
             onSearchSubmit={() => { setPage(1); setSubmittedSearch(search); }}
+            searchPlaceholder="Search vehicles by number, model, type..."
             pagination={{
               page,
               limit,

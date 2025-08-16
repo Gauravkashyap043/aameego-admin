@@ -7,10 +7,12 @@ interface UpdateUserPersonalDetailsData {
   dob?: string;
   gender?: string;
   fatherName?: string;
+  businessPartnerRef?: string;
   address?: {
     address: string;
     cityDistrict: string;
     pinCode: string;
+    state?: string;
   };
 }
 

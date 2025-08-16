@@ -11,6 +11,7 @@ import {
   useBatteryTypes,
   useVehicleOwnerships,
   useVehicleVendors,
+  useEvTypes,
 } from '../hooks/vehicleMisc';
 import { useRidersAndSupervisors } from '../hooks/useUsers';
 import { ToastContainer, toast } from 'react-toastify';
@@ -63,6 +64,7 @@ const AddVehicle: React.FC = () => {
     hub: '',
     supervisor: '',
     vehicleType: '',
+    evType: '',
     oem: '',
     vehicleModel: '',
     vehicleModelVersion: '',
@@ -113,6 +115,7 @@ const AddVehicle: React.FC = () => {
   const { data: cities = [] } = useCities();
   const { data: hubs = [] } = useHubs();
   const { data: vehicleTypes = [] } = useVehicleTypes();
+  const { data: evTypes = [] } = useEvTypes();
   const { data: oems = [] } = useOEMs();
   const { data: vehicleModels = [] } = useVehicleModels();
   const { data: batteryTypes = [] } = useBatteryTypes();
@@ -141,6 +144,7 @@ const AddVehicle: React.FC = () => {
             hub: data.hub?._id || '',
             supervisor: data.supervisor?._id || '',
             vehicleType: data.vehicleType?._id || '',
+            evType: data.evType?._id || '',
             oem: data.oem?._id || '',
             vehicleModel: data.vehicleModel?._id || '',
             vehicleModelVersion: data.vehicleModelVersion || '',
@@ -398,6 +402,7 @@ const AddVehicle: React.FC = () => {
                 <InputField label="Aameego Hub" type="select" value={form.hub} onChange={e => setForm({ ...form, hub: e.target.value })} options={hubs.map(hub => ({ label: hub.name, value: hub._id }))} required />
                 <InputField label="Supervisor" type="select" value={form.supervisor} onChange={e => setForm({ ...form, supervisor: e.target.value })} options={supervisors.map(sup => ({ label: `${sup.name || 'N/A'} (${sup.profileCode})`, value: sup._id }))} required />
                 <InputField label="Vehicle Type" type="select" value={form.vehicleType} onChange={e => setForm({ ...form, vehicleType: e.target.value })} options={vehicleTypes.map(type => ({ label: type.name, value: type._id }))} required />
+                <InputField label="EV Type" type="select" value={form.evType} onChange={e => setForm({ ...form, evType: e.target.value })} options={evTypes.map(type => ({ label: type.name, value: type._id }))} />
                 <InputField label="OEM" type="select" value={form.oem} onChange={e => setForm({ ...form, oem: e.target.value })} options={oems.map(oem => ({ label: oem.name, value: oem._id }))} required />
                 <InputField label="Vehicle Model" type="select" value={form.vehicleModel} onChange={e => setForm({ ...form, vehicleModel: e.target.value })} options={vehicleModels.map(model => ({ label: model.name, value: model._id }))} required />
                 <InputField label="Vehicle Model Version" value={form.vehicleModelVersion} onChange={e => setForm({ ...form, vehicleModelVersion: e.target.value })} placeholder="Enter Version ID" required />

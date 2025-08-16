@@ -138,6 +138,16 @@ const VehicleMaster: React.FC = () => {
       },
     },
     {
+      key: 'evType',
+      title: 'EV Type',
+      essential: true,
+      render: (value: any) => (
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-medium text-gray-900">{value?.name || '-'}</span>
+        </div>
+      )
+    },
+    {
       key: 'currentAssignment',
       title: 'Assigned To',
       essential: true,
@@ -151,7 +161,7 @@ const VehicleMaster: React.FC = () => {
         // const profileCode = rider?.profileCode || rider.profileCode || 'No Code';
         
         return (
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center gap-2">
             <FiUser className="text-blue-600 w-4 h-4 mt-0.5 flex-shrink-0" />
             <div className="flex flex-col">
               <span className="text-sm font-medium text-gray-900">{name}</span>
@@ -248,6 +258,7 @@ const VehicleMaster: React.FC = () => {
     hub: v.hub,
     supervisor: v.supervisor,
     vehicleType: v.vehicleType,
+    evType: v.evType,
     oem: v.oem,
     vehicleModel: v.vehicleModel,
     vehicleRCNumber: v.vehicleRCNumber,
@@ -320,6 +331,9 @@ const VehicleMaster: React.FC = () => {
             searchButtonLabel="Search"
             onSearchSubmit={() => { setPage(1); setSubmittedSearch(search); }}
             searchPlaceholder="Search vehicles by number, model, type..."
+            skeletonRows={8}
+            skeletonShowStatus={true}
+            skeletonShowActions={true}
             pagination={{
               page,
               limit,

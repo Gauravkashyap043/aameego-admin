@@ -8,4 +8,5 @@ export const useVehicleModels = () => useFetchList('/vehicle-misc/vehicle-model'
 export const useBatteryTypes = () => useFetchList('/vehicle-misc/battery-type', 'batteryTypes');
 export const useVehicleOwnerships = () => useFetchList('/vehicle-misc/vehicle-ownership', 'vehicleOwnerships');
 export const useVehicleVendors = () => useFetchList('/vehicle-misc/vehicle-vendor', 'vehicleVendors');
+export const useEvTypes = () => useFetchList('/vehicle-misc/ev-type', 'evTypes');
 export const useSupervisors = () => useFetchList('/user/supervisors', 'supervisors'); 

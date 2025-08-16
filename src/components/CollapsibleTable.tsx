@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
+import TableSkeleton from './TableSkeleton';
 
 export type CollapsibleColumn = {
   key: string;
@@ -36,6 +37,11 @@ type CollapsibleTableProps = {
     onLimitChange?: (limit: number) => void;
     pageSizeOptions?: number[];
   };
+  // Skeleton loading props
+  skeletonRows?: number;
+  skeletonShowAvatar?: boolean;
+  skeletonShowStatus?: boolean;
+  skeletonShowActions?: boolean;
 };
 
 const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
@@ -52,7 +58,11 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
   onSearchSubmit,
   actionButtonLabel,
   onActionButtonClick,
-  pagination
+  pagination,
+  skeletonRows = 5,
+  skeletonShowAvatar = false,
+  skeletonShowStatus = false,
+  skeletonShowActions = false
 }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -112,16 +122,7 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
     return dedup;
   }
 
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow">
-        <div className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          <span className="ml-3 text-gray-600">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+  // Remove the early return for loading state to keep search and buttons visible
 
   return (
     <div className="bg-white rounded-lg shadow">
@@ -167,86 +168,96 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="w-8 px-6 py-3"></th>
-              {essentialColumns.map((column) => (
-                <th
-                  key={column.key}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  style={column.width ? { width: column.width } : undefined}
-                >
-                  {column.title}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.length === 0 ? (
+        {isLoading ? (
+          <TableSkeleton
+            rows={skeletonRows}
+            columns={columns.filter(col => col.essential).length}
+            showAvatar={skeletonShowAvatar}
+            showStatus={skeletonShowStatus}
+            showActions={skeletonShowActions}
+          />
+        ) : (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td 
-                  colSpan={essentialColumns.length + 1} 
-                  className="px-6 py-12 text-center text-gray-500"
-                >
-                  {emptyMessage}
-                </td>
+                <th className="w-8 px-6 py-3"></th>
+                {essentialColumns.map((column) => (
+                  <th
+                    key={column.key}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    style={column.width ? { width: column.width } : undefined}
+                  >
+                    {column.title}
+                  </th>
+                ))}
               </tr>
-            ) : (
-              data.map((row) => (
-                <React.Fragment key={row.id}>
-                  {/* Main Row */}
-                  <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => toggleRowExpansion(row.id)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        {isRowExpanded(row.id) ? (
-                          <FiChevronDown className="w-4 h-4" />
-                        ) : (
-                          <FiChevronRight className="w-4 h-4" />
-                        )}
-                      </button>
-                    </td>
-                    {essentialColumns.map((column) => (
-                      <td
-                        key={column.key}
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer"
-                        onClick={() => onRowClick && onRowClick(row)}
-                      >
-                        {column.render ? column.render(row[column.key], row) : row[column.key]}
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data.length === 0 ? (
+                <tr>
+                  <td 
+                    colSpan={essentialColumns.length + 1} 
+                    className="px-6 py-12 text-center text-gray-500"
+                  >
+                    {emptyMessage}
+                  </td>
+                </tr>
+              ) : (
+                data.map((row) => (
+                  <React.Fragment key={row.id}>
+                    {/* Main Row */}
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => toggleRowExpansion(row.id)}
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          {isRowExpanded(row.id) ? (
+                            <FiChevronDown className="w-4 h-4" />
+                          ) : (
+                            <FiChevronRight className="w-4 h-4" />
+                          )}
+                        </button>
                       </td>
-                    ))}
-                  </tr>
-                  
-                  {/* Expanded Row */}
-                  {isRowExpanded(row.id) && additionalColumns.length > 0 && (
-                    <tr className="bg-gray-50">
-                      <td></td>
-                      <td colSpan={essentialColumns.length} className="px-6 py-4">
-                        <div className="bg-white rounded-lg border border-gray-200 p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {additionalColumns.map((column) => (
-                              <div key={column.key} className="flex flex-col">
-                                <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                                  {column.title}
-                                </dt>
-                                <dd className="text-sm text-gray-900">
-                                  {column.render ? column.render(row[column.key], row) : row[column.key] || '-'}
-                                </dd>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </td>
+                      {essentialColumns.map((column) => (
+                        <td
+                          key={column.key}
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer"
+                          onClick={() => onRowClick && onRowClick(row)}
+                        >
+                          {column.render ? column.render(row[column.key], row) : row[column.key]}
+                        </td>
+                      ))}
                     </tr>
-                  )}
-                </React.Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
+                    
+                    {/* Expanded Row */}
+                    {isRowExpanded(row.id) && additionalColumns.length > 0 && (
+                      <tr className="bg-gray-50">
+                        <td></td>
+                        <td colSpan={essentialColumns.length} className="px-6 py-4">
+                          <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {additionalColumns.map((column) => (
+                                <div key={column.key} className="flex flex-col">
+                                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                                    {column.title}
+                                  </dt>
+                                  <dd className="text-sm text-gray-900">
+                                    {column.render ? column.render(row[column.key], row) : row[column.key] || '-'}
+                                  </dd>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Pagination */}

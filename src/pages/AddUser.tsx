@@ -11,6 +11,7 @@ import {
   useUpdateDocument,
   useUpdateUserStatus,
 } from "../hooks/useUpdateUser";
+import { useFetchBusinessPartners } from "../hooks/useFetchBusinessPartners";
 import { toast } from "react-toastify";
 import { formatDateForInput, formatDateForBackend } from "../utils/dateUtils";
 import { RejectUserModal } from "../components/modals/RejectModal";
@@ -21,6 +22,7 @@ import { useFetchAvailableVehicles } from "../hooks/useFetchAvailableVehicles";
 import { useFetchUser } from "../hooks/useFetchUser";
 import { useUpdateVehicleStatus } from "../hooks/useVehicleStatus";
 import VehicleStatusModal from "../components/VehicleStatusModal";
+import { useUnassignRiderByProfileCode } from "../hooks/useUsers";
 
 const TABS = [
   "Personal information",
@@ -42,11 +44,13 @@ const AddUser: React.FC = () => {
   const updateDocument = useUpdateDocument();
   const updateUserStatus = useUpdateUserStatus();
   const createOrUpdateDocRemark = useCreateOrUpdateDocRemark();
+  const { data: businessPartnersData, isLoading: loadingBusinessPartners } = useFetchBusinessPartners();
   const { data: vehicleAssignmentsRaw, isLoading: loadingAssignments, error: vehicleAssignmentsError, refetch: refetchAssignments } = useFetchVehicleAssignment(authId);
   const vehicleAssignments: any[] = Array.isArray(vehicleAssignmentsRaw) ? vehicleAssignmentsRaw : [];
   const { data: availableVehicles = [], isLoading: loadingAvailableVehicles } = useFetchAvailableVehicles();
   const { data: userData, isLoading: loadingUser } = useFetchUser(id);
   const updateVehicleStatus = useUpdateVehicleStatus();
+  const unassignRiderMutation = useUnassignRiderByProfileCode();
 
   const [tabs, setTabs] = useState(TABS);
   // Add state for rejection/deactivation
@@ -55,6 +59,10 @@ const AddUser: React.FC = () => {
   // const [rejectionReason, setRejectionReason] = useState("");
   const [deactivateReason, setDeactivateReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
+  
+  // Unassign modal state
+  const [showUnassignModal, setShowUnassignModal] = useState(false);
+  const [selectedUnassignUser, setSelectedUnassignUser] = useState<any>(null);
 
   // Form fields
   const [fullName, setFullName] = useState("");
@@ -67,6 +75,7 @@ const AddUser: React.FC = () => {
   const [pin, setPin] = useState("");
   const [state, setState] = useState("");
   const [role, setRole] = useState("");
+  const [businessPartner, setBusinessPartner] = useState("");
   // Bank
   const [bankName, setBankName] = useState("");
   const [bankFullName, setBankFullName] = useState("");
@@ -285,6 +294,7 @@ const AddUser: React.FC = () => {
       setCity(userData?.addressRef?.cityDistrict || "");
       setPin(userData?.addressRef?.pinCode || "");
       setState(userData?.addressRef?.state || "");
+      setBusinessPartner(userData?.businessPartnerRef?._id || "");
       setBankName(userData.document?.bank?.details?.bankName || "");
       setBankFullName(userData.document?.bank?.details?.holderName || "");
       setAccountNumber(userData.document?.bank?.details?.accountNumber || "");
@@ -522,6 +532,7 @@ const AddUser: React.FC = () => {
       dob: formatDateForBackend(dob),
       gender: gender.toLowerCase(),
       fatherName: father,
+      businessPartnerRef: businessPartner || undefined,
       address: {
         address: address,
         cityDistrict: city,
@@ -541,7 +552,7 @@ const AddUser: React.FC = () => {
             setActiveTab(1); // Move to next tab
           }, 2000);
         },
-        onError: (error) => {
+        onError: (error: any) => {
           setSaving(false);
           toast.error(`Failed to save personal information: ${error.message}`);
         },
@@ -712,6 +723,32 @@ const AddUser: React.FC = () => {
   // Handle deactivate
   const handleDeactivate = () => {
     setShowDeactivateModal(true);
+  };
+
+  const handleUnassignClick = (userData: any) => {
+    setSelectedUnassignUser(userData);
+    setShowUnassignModal(true);
+  };
+
+  const handleConfirmUnassign = async () => {
+    if (!selectedUnassignUser || !id) return;
+
+    try {
+      await unassignRiderMutation.mutateAsync({
+        supervisorId: id,
+        riderProfileCode: selectedUnassignUser.profileCode,
+      });
+      
+      toast.success('User unassigned successfully!');
+      setShowUnassignModal(false);
+      setSelectedUnassignUser(null);
+      
+      // Refetch user data to update the assignedUser list
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Error unassigning user:', error);
+      toast.error(error.response?.data?.message || 'Failed to unassign user');
+    }
   };
 
   // Download file function
@@ -1153,6 +1190,25 @@ const AddUser: React.FC = () => {
                       }}
                       placeholder="Enter state"
                       required
+                    />
+                    <InputField
+                      label="Business Partner"
+                      value={businessPartner}
+                      onChange={(e) => {
+                        setBusinessPartner(e.target.value);
+                        setHasChanges((prev) => ({
+                          ...prev,
+                          personal: true,
+                        }));
+                      }}
+                      type="select"
+                      options={[
+                        ...((businessPartnersData as any)?.data?.map((partner: any) => ({
+                          label: `${partner.name} (${partner.type})`,
+                          value: partner._id,
+                        })) || []),
+                      ]}
+                      disabled={loadingBusinessPartners}
                     />
                   </div>
                   <ActionButtons onSave={handleSavePersonalInfo} />
@@ -2439,8 +2495,8 @@ const AddUser: React.FC = () => {
                                   </button>
                                   
                                   <button
+                                    onClick={() => handleUnassignClick(userData)}
                                     className="px-3 md:px-4 xl:px-6 py-2 xl:py-3 bg-red-50 text-red-600 rounded-lg md:rounded-xl border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all duration-200 font-medium text-sm xl:text-base flex items-center justify-center gap-2"
-                                    // onClick={() => handleUnassign(userData._id)}
                                     title="Unassign"
                                   >
                                     <svg className="w-4 h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2570,6 +2626,49 @@ const AddUser: React.FC = () => {
         loading={updateVehicleStatus.isPending}
         assignment={selectedAssignment}
       />
+
+      {/* Unassign Confirmation Modal */}
+      <Modal
+        open={showUnassignModal}
+        onClose={() => {
+          setShowUnassignModal(false);
+          setSelectedUnassignUser(null);
+        }}
+      >
+        <div className="p-6">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">Confirm Unassign</h3>
+          <p className="mb-4 text-gray-700">
+            Are you sure you want to unassign{" "}
+            <span className="font-semibold text-blue-600">
+              {selectedUnassignUser?.name}
+            </span>{" "}
+            ({selectedUnassignUser?.profileCode}) from this {role === "SUPERVISOR" ? "supervisor" : "rider"}?
+          </p>
+          <p className="mb-6 text-sm text-gray-500">
+            This action cannot be undone. The user will no longer be associated with this {role === "SUPERVISOR" ? "supervisor" : "rider"}.
+          </p>
+
+          <div className="flex space-x-3">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowUnassignModal(false);
+                setSelectedUnassignUser(null);
+              }}
+              disabled={unassignRiderMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleConfirmUnassign}
+              disabled={unassignRiderMutation.isPending}
+            >
+              {unassignRiderMutation.isPending ? "Unassigning..." : "Confirm Unassign"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 };

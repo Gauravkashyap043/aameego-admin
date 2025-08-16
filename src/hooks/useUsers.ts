@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 
 interface User {
@@ -28,6 +28,26 @@ interface User {
     };
     assignedAt: string;
   } | null;
+  assignedUser?: Array<{
+    _id: string;
+    supervisor?: {
+      _id: string;
+      name: string;
+      profileCode: string;
+      authRef: {
+        identifier: string;
+      };
+    };
+    rider?: {
+      _id: string;
+      name: string;
+      profileCode: string;
+      authRef: {
+        identifier: string;
+      };
+    };
+    assignedAt: string;
+  }> | null;
   // Document fields for riders
   document?: {
     aadhaar?: {
@@ -113,5 +133,41 @@ export const useUsersByRole = ({ role, page = 1, limit = 10, search = '', status
       return response.data.data;
     },
     staleTime: 30000,
+  });
+};
+
+export const useUnassignRider = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ supervisorId, riderId }: { supervisorId: string; riderId: string }) => {
+      const response = await api.delete('/supervisor-rider/unassign-rider', {
+        data: { supervisorId, riderId }
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch user lists
+      queryClient.invalidateQueries({ queryKey: ['users', 'by-role'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'riders-supervisors'] });
+    },
+  });
+};
+
+export const useUnassignRiderByProfileCode = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ supervisorId, riderProfileCode }: { supervisorId: string; riderProfileCode: string }) => {
+      const response = await api.delete('/supervisor-rider/unassign-rider-by-profile-code', {
+        data: { supervisorId, riderProfileCode }
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch user lists
+      queryClient.invalidateQueries({ queryKey: ['users', 'by-role'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'riders-supervisors'] });
+    },
   });
 }; 

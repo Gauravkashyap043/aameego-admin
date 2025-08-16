@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import CollapsibleTable from "../components/CollapsibleTable";
-import type { Column } from "../components/Table";
+// import type { Column } from "../components/Table";
 import type { CollapsibleColumn } from "../components/CollapsibleTable";
 import { useRidersAndSupervisors, useUsersByRole } from "../hooks/useUsers";
 import { useNavigate } from "react-router-dom";
@@ -390,219 +390,219 @@ const UserManagement: React.FC = () => {
     ] : []),
   ];
 
-  const columns: Column[] = [
-    {
-      key: "name",
-      title: "Name",
-      render: (value, record) => (
-        <div className="flex items-center gap-2 pr-3">
-          {record.profilePicture ? (
-            <img
-              src={record.profilePicture}
-              alt={value || 'N/A'}
-              className="w-10 h-10 rounded-full border border-gray-200 object-cover bg-gray-100 cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all"
-              onClick={() => handleProfilePictureClick(record.profilePicture, value || 'N/A')}
-              title="Click to view profile picture"
-            />
-          ) : (
-            <div 
-              className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all"
-              onClick={() => handleProfilePictureClick("", value || 'N/A')}
-              title="No profile picture available"
-            >
-              {(value || 'N/A').charAt(0)}
-            </div>
-          )}
-          <div>
-            <div
-              className="font-semibold text-primary cursor-pointer hover:underline mb-1"
-              onClick={() => handleViewUserDetails(record.id)}
-            >
-              {value || 'N/A'}
-            </div>
-            <ProfileCode record={record} />
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "phone",
-      title: "Phone #",
-      render: (_value: any, record: any) => {
-        return record.authRef?.identifier || "-";
-      },
-    },
-    {
-      key: "status",
-      title: "Status",
-      render: (_value, record) => {
-        const status = record.status;
+  // const columns: Column[] = [
+  //   {
+  //     key: "name",
+  //     title: "Name",
+  //     render: (value, record) => (
+  //       <div className="flex items-center gap-2 pr-3">
+  //         {record.profilePicture ? (
+  //           <img
+  //             src={record.profilePicture}
+  //             alt={value || 'N/A'}
+  //             className="w-10 h-10 rounded-full border border-gray-200 object-cover bg-gray-100 cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all"
+  //             onClick={() => handleProfilePictureClick(record.profilePicture, value || 'N/A')}
+  //             title="Click to view profile picture"
+  //           />
+  //         ) : (
+  //           <div 
+  //             className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all"
+  //             onClick={() => handleProfilePictureClick("", value || 'N/A')}
+  //             title="No profile picture available"
+  //           >
+  //             {(value || 'N/A').charAt(0)}
+  //           </div>
+  //         )}
+  //         <div>
+  //           <div
+  //             className="font-semibold text-primary cursor-pointer hover:underline mb-1"
+  //             onClick={() => handleViewUserDetails(record.id)}
+  //           >
+  //             {value || 'N/A'}
+  //           </div>
+  //           <ProfileCode record={record} />
+  //         </div>
+  //       </div>
+  //     ),
+  //   },
+  //   {
+  //     key: "phone",
+  //     title: "Phone #",
+  //     render: (_value: any, record: any) => {
+  //       return record.authRef?.identifier || "-";
+  //     },
+  //   },
+  //   {
+  //     key: "status",
+  //     title: "Status",
+  //     render: (_value, record) => {
+  //       const status = record.status;
         
-        const getStatusStyles = (status: string) => {
-          switch (status?.toLowerCase()) {
-            case "verified":
-              return "bg-green-100 text-green-700";
-            case "rejected":
-            case "deactived":
-              return "bg-red-100 text-red-700";
-            case "pending":
-              return "bg-yellow-100 text-yellow-700";
-            default:
-              return "bg-gray-100 text-gray-700";
-          }
-        };
+  //       const getStatusStyles = (status: string) => {
+  //         switch (status?.toLowerCase()) {
+  //           case "verified":
+  //             return "bg-green-100 text-green-700";
+  //           case "rejected":
+  //           case "deactived":
+  //             return "bg-red-100 text-red-700";
+  //           case "pending":
+  //             return "bg-yellow-100 text-yellow-700";
+  //           default:
+  //             return "bg-gray-100 text-gray-700";
+  //         }
+  //       };
 
-        const getDotStyles = (status: string) => {
-          switch (status?.toLowerCase()) {
-            case "verified":
-              return "bg-green-500";
-            case "rejected":
-            case "deactived":
-              return "bg-red-500";
-            case "pending":
-              return "bg-yellow-500";
-            default:
-              return "bg-gray-500";
-          }
-        };
+  //       const getDotStyles = (status: string) => {
+  //         switch (status?.toLowerCase()) {
+  //           case "verified":
+  //             return "bg-green-500";
+  //           case "rejected":
+  //           case "deactived":
+  //             return "bg-red-500";
+  //           case "pending":
+  //             return "bg-yellow-500";
+  //           default:
+  //             return "bg-gray-500";
+  //         }
+  //       };
 
-        return (
-          <span
-            className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusStyles(status)}`}
-          >
-            <span
-              className={`mr-1 w-2 h-2 rounded-full ${getDotStyles(status)}`}
-            ></span>
-            {status || 'Unknown'}
-          </span>
-        );
-      },
-    },
-    {
-      key: "lastLogin",
-      title: "Last Login",
-      render: (_value, record) => {
-        const lastLoginAt = record.authRef?.lastLoginAt;
-        if (!lastLoginAt) return "Never";
-        const dateObj = new Date(lastLoginAt);
-        const day = String(dateObj.getDate()).padStart(2, "0");
-        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-        const year = dateObj.getFullYear();
-        const hours = String(dateObj.getHours()).padStart(2, "0");
-        const minutes = String(dateObj.getMinutes()).padStart(2, "0");
-        return `${day}-${month}-${year} ${hours}:${minutes}`;
-      },
-    },
-    // Additional fields for supervisors only
-    ...(activeTab === "supervisor" ? [
-      {
-        key: "riderCount",
-        title: "Assigned Riders",
-        render: (_value: any, record: any) => {
-          const riderCount = record.assignedUser?.length || 0;
-          return (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-900">{riderCount}</span>
-              <span className="text-xs text-gray-500">riders</span>
-            </div>
-          );
-        },
-      },
-    ] : []),
-    // Additional fields for riders only
-    ...(activeTab === "rider" ? [
-      {
-        key: "assignedSupervisor",
-        title: "Assigned Supervisor",
-        render: (value: any) => {
-          if (!value) {
-            return (
-              <span className="text-gray-400 italic">Not assigned</span>
-            );
-          }
-          return (
-            <div className="flex flex-col">
-              <div className="font-medium text-gray-900">
-                {value.name}
-              </div>
-              <div className="text-sm text-gray-500">
-                {value.profileCode} • {value.authRef?.identifier}
-              </div>
-              <div className="text-xs text-gray-400">
-                Assigned: {new Date(value.assignedAt).toLocaleDateString()}
-              </div>
-            </div>
-          );
-        },
-      },
-      {
-        key: "aadharNumber",
-        title: "Aadhar Number",
-        render: (_value: any, record: any) => {
-          return record.document?.aadhaar?.ocrFront?.aadhaarNumber || "-";
-        },
-      },
-      {
-        key: "drivingLicenseNumber",
-        title: "DL Number",
-        render: (_value: any, record: any) => {
-          return record.document?.drivingLicense?.ocrFront?.drivingLicenseNumber || "-";
-        },
-      },
-      {
-        key: "dateOfBirth",
-        title: "Date of Birth",
-        render: (_value: any, record: any) => {
-          return record.dob || "-";
-        },
-      },
-      {
-        key: "onboardDate",
-        title: "Onboard Date",
-        render: (_value: any, record: any) => {
-          if (!record.createdAt) return "-";
-          const dateObj = new Date(record.createdAt);
-          const day = String(dateObj.getDate()).padStart(2, "0");
-          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-          const year = dateObj.getFullYear();
-          return `${day}-${month}-${year}`;
-        },
-      },
-      {
-        key: "address",
-        title: "Address",
-        render: (_value: any, record: any) => {
-          const address = record.addressRef;
-          if (!address) return "-";
-          const parts = [];
-          if (address.address) parts.push(address.address);
-          if (address.cityDistrict) parts.push(address.cityDistrict);
-          if (address.state) parts.push(address.state);
-          if (address.pinCode) parts.push(address.pinCode);
-          return parts.length > 0 ? parts.join(", ") : "-";
-        },
-      },
-    ] : []),
-    {
-      key: "actions",
-      title: "Action",
-      render: (_value, record) => (
-        <ActionDropdown
-          items={[
-            {
-              label: "Edit Details",
-              onClick: () => handleViewUserDetails(record.id),
-            },
-            {
-              label: "Deactivate User",
-              onClick: () => handleDeactivate(record.id),
-              className: "text-red-600 hover:bg-red-50",
-            },
-          ]}
-        />
-      ),
-    },
-  ];
+  //       return (
+  //         <span
+  //           className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusStyles(status)}`}
+  //         >
+  //           <span
+  //             className={`mr-1 w-2 h-2 rounded-full ${getDotStyles(status)}`}
+  //           ></span>
+  //           {status || 'Unknown'}
+  //         </span>
+  //       );
+  //     },
+  //   },
+  //   {
+  //     key: "lastLogin",
+  //     title: "Last Login",
+  //     render: (_value, record) => {
+  //       const lastLoginAt = record.authRef?.lastLoginAt;
+  //       if (!lastLoginAt) return "Never";
+  //       const dateObj = new Date(lastLoginAt);
+  //       const day = String(dateObj.getDate()).padStart(2, "0");
+  //       const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  //       const year = dateObj.getFullYear();
+  //       const hours = String(dateObj.getHours()).padStart(2, "0");
+  //       const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+  //       return `${day}-${month}-${year} ${hours}:${minutes}`;
+  //     },
+  //   },
+  //   // Additional fields for supervisors only
+  //   ...(activeTab === "supervisor" ? [
+  //     {
+  //       key: "riderCount",
+  //       title: "Assigned Riders",
+  //       render: (_value: any, record: any) => {
+  //         const riderCount = record.assignedUser?.length || 0;
+  //         return (
+  //           <div className="flex items-center gap-2">
+  //             <span className="text-sm font-medium text-gray-900">{riderCount}</span>
+  //             <span className="text-xs text-gray-500">riders</span>
+  //           </div>
+  //         );
+  //       },
+  //     },
+  //   ] : []),
+  //   // Additional fields for riders only
+  //   ...(activeTab === "rider" ? [
+  //     {
+  //       key: "assignedSupervisor",
+  //       title: "Assigned Supervisor",
+  //       render: (value: any) => {
+  //         if (!value) {
+  //           return (
+  //             <span className="text-gray-400 italic">Not assigned</span>
+  //           );
+  //         }
+  //         return (
+  //           <div className="flex flex-col">
+  //             <div className="font-medium text-gray-900">
+  //               {value.name}
+  //             </div>
+  //             <div className="text-sm text-gray-500">
+  //               {value.profileCode} • {value.authRef?.identifier}
+  //             </div>
+  //             <div className="text-xs text-gray-400">
+  //               Assigned: {new Date(value.assignedAt).toLocaleDateString()}
+  //             </div>
+  //           </div>
+  //         );
+  //       },
+  //     },
+  //     {
+  //       key: "aadharNumber",
+  //       title: "Aadhar Number",
+  //       render: (_value: any, record: any) => {
+  //         return record.document?.aadhaar?.ocrFront?.aadhaarNumber || "-";
+  //       },
+  //     },
+  //     {
+  //       key: "drivingLicenseNumber",
+  //       title: "DL Number",
+  //       render: (_value: any, record: any) => {
+  //         return record.document?.drivingLicense?.ocrFront?.drivingLicenseNumber || "-";
+  //       },
+  //     },
+  //     {
+  //       key: "dateOfBirth",
+  //       title: "Date of Birth",
+  //       render: (_value: any, record: any) => {
+  //         return record.dob || "-";
+  //       },
+  //     },
+  //     {
+  //       key: "onboardDate",
+  //       title: "Onboard Date",
+  //       render: (_value: any, record: any) => {
+  //         if (!record.createdAt) return "-";
+  //         const dateObj = new Date(record.createdAt);
+  //         const day = String(dateObj.getDate()).padStart(2, "0");
+  //         const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  //         const year = dateObj.getFullYear();
+  //         return `${day}-${month}-${year}`;
+  //       },
+  //     },
+  //     {
+  //       key: "address",
+  //       title: "Address",
+  //       render: (_value: any, record: any) => {
+  //         const address = record.addressRef;
+  //         if (!address) return "-";
+  //         const parts = [];
+  //         if (address.address) parts.push(address.address);
+  //         if (address.cityDistrict) parts.push(address.cityDistrict);
+  //         if (address.state) parts.push(address.state);
+  //         if (address.pinCode) parts.push(address.pinCode);
+  //         return parts.length > 0 ? parts.join(", ") : "-";
+  //       },
+  //     },
+  //   ] : []),
+  //   {
+  //     key: "actions",
+  //     title: "Action",
+  //     render: (_value, record) => (
+  //       <ActionDropdown
+  //         items={[
+  //           {
+  //             label: "Edit Details",
+  //             onClick: () => handleViewUserDetails(record.id),
+  //           },
+  //           {
+  //             label: "Deactivate User",
+  //             onClick: () => handleDeactivate(record.id),
+  //             className: "text-red-600 hover:bg-red-50",
+  //           },
+  //         ]}
+  //       />
+  //     ),
+  //   },
+  // ];
 
   return (
     <Layout>

@@ -781,7 +781,7 @@ const AddUser: React.FC = () => {
     try {
       await api.post("/supervisor-rider/assign-rider", {
         supervisorId: id,
-        riderId: selectedRider._id,
+        riderProfileCode: selectedRider.profileCode,
       });
       toast.success("Rider assigned successfully!");
       setShowAssignRiderModal(false);

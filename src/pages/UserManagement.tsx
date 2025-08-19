@@ -215,6 +215,14 @@ const UserManagement: React.FC = () => {
     };
   });
 
+  // Get unassigned riders (riders without assignedSupervisor)
+  const riderOptions = (allUsersData?.riders || [])
+    .filter((rider: any) => !rider.assignedSupervisor) // Only include unassigned riders
+    .map((rider: any) => ({
+      label: `${rider.name || 'N/A'} (${rider.profileCode})${rider.authRef?.identifier ? ` - ${rider.authRef.identifier}` : ""}`,
+      value: rider.profileCode, // Use profile code as value
+    }));
+
   // Define collapsible columns for the user table
   const collapsibleColumns: CollapsibleColumn[] = [
     {
@@ -308,34 +316,6 @@ const UserManagement: React.FC = () => {
       },
     },
     {
-      key: "actions",
-      title: "Action",
-      essential: true,
-      render: (_value, record) => {
-        const actionItems = [
-          {
-            label: "Edit Details",
-            onClick: () => handleViewUserDetails(record.id),
-          },
-        ];
-
-        // Add convert role option only for supervisors
-        if (activeTab === "supervisor") {
-          actionItems.push({
-            label: "Convert to Rider",
-            onClick: () => handleConvertRole(record),
-          });
-        }
-
-        actionItems.push({
-          label: "Deactivate User",
-          onClick: () => handleDeactivate(record.id),
-        });
-
-        return <ActionDropdown items={actionItems} />;
-      },
-    },
-    {
       key: "lastLogin",
       title: "Last Login",
       essential: false,
@@ -367,15 +347,42 @@ const UserManagement: React.FC = () => {
           );
         },
       },
+      {
+        key: "actions",
+        title: "Action",
+        essential: true,
+        render: (_value: any, record: any) => {
+          const actionItems = [
+            {
+              label: "Edit Details",
+              onClick: () => handleViewUserDetails(record.id),
+            },
+          ];
+
+          // Add convert role option only for supervisors
+          actionItems.push({
+            label: "Convert to Rider",
+            onClick: () => handleConvertRole(record),
+          });
+
+          actionItems.push({
+            label: "Deactivate User",
+            onClick: () => handleDeactivate(record.id),
+          });
+
+          return <ActionDropdown items={actionItems} />;
+        },
+      },
     ] : []),
     // Additional fields for riders only
     ...(activeTab === "rider" ? [
       {
         key: "assignedSupervisor",
         title: "Assigned Supervisor",
-        essential: false,
-        render: (value: any) => {
-          if (!value) {
+        essential: true,
+        render: (_value: any, record: any) => {
+          const assignedSupervisor = record.assignedSupervisor;
+          if (!assignedSupervisor) {
             return (
               <span className="text-gray-400 italic">Not assigned</span>
             );
@@ -383,13 +390,13 @@ const UserManagement: React.FC = () => {
           return (
             <div className="flex flex-col">
               <div className="font-medium text-gray-900">
-                {value.name}
+                {assignedSupervisor.name || 'N/A'}
               </div>
               <div className="text-sm text-gray-500">
-                {value.profileCode} • {value.authRef?.identifier}
+                {assignedSupervisor.profileCode} • {assignedSupervisor.authRef?.identifier || 'N/A'}
               </div>
               <div className="text-xs text-gray-400">
-                Assigned: {new Date(value.assignedAt).toLocaleDateString()}
+                Assigned: {new Date(assignedSupervisor.assignedAt).toLocaleDateString('en-GB')}
               </div>
             </div>
           );
@@ -445,6 +452,26 @@ const UserManagement: React.FC = () => {
           if (address.state) parts.push(address.state);
           if (address.pinCode) parts.push(address.pinCode);
           return parts.length > 0 ? parts.join(", ") : "-";
+        },
+      },
+      {
+        key: "actions",
+        title: "Action",
+        essential: true,
+        render: (_value: any, record: any) => {
+          const actionItems = [
+            {
+              label: "Edit Details",
+              onClick: () => handleViewUserDetails(record.id),
+            },
+          ];
+
+          actionItems.push({
+            label: "Deactivate User",
+            onClick: () => handleDeactivate(record.id),
+          });
+
+          return <ActionDropdown items={actionItems} />;
         },
       },
     ] : []),
@@ -523,7 +550,7 @@ const UserManagement: React.FC = () => {
             actionButtonLabel="Assign Supervisor"
             onActionButtonClick={() => setShowAssignModal(true)}
             showSearch={true}
-            searchPlaceholder="Search by name, profile code, phone, or DL number"
+            searchPlaceholder={activeTab === "supervisor" ? "Search supervisors by name, profile code, or phone" : "Search riders by name, profile code, or phone"}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             searchButtonLabel="Search"
@@ -585,12 +612,12 @@ const UserManagement: React.FC = () => {
           title="Assign Supervisor to Rider"
         >
           <form onSubmit={handleAssignSubmit} className="flex flex-col gap-4">
-            <InputField
-              label="Rider Profile Code"
-              name="riderProfileCode"
+            <SearchableSelect
+              label="Select Rider"
               value={assignForm.riderProfileCode}
-              onChange={handleAssignChange}
-              placeholder="Enter Rider Profile Code"
+              onChange={(value) => setAssignForm(prev => ({ ...prev, riderProfileCode: value }))}
+              options={riderOptions}
+              placeholder={`Search riders by name or profile code (${riderOptions.length} available)...`}
               required
             />
             <SearchableSelect

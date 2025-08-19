@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { DocumentDuplicateIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 export function ProfileCode({ record }: { record: { profileCode: string } }) {
   const [copied, setCopied] = useState(false);
@@ -22,7 +22,7 @@ export function ProfileCode({ record }: { record: { profileCode: string } }) {
         {copied ? (
           <CheckIcon className="w-4 h-4 text-green-500" />
         ) : (
-          <ClipboardIcon className="w-4 h-4" />
+          <DocumentDuplicateIcon className="w-4 h-4" />
         )}
       </span>
     </div>

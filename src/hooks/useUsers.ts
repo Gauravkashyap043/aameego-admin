@@ -99,6 +99,7 @@ interface UseUsersByRoleParams {
   limit?: number;
   search?: string;
   status?: string;
+  hasDocuments?: string;
 }
 
 export const useRidersAndSupervisors = () => {
@@ -111,9 +112,9 @@ export const useRidersAndSupervisors = () => {
   });
 };
 
-export const useUsersByRole = ({ role, page = 1, limit = 10, search = '', status }: UseUsersByRoleParams) => {
+export const useUsersByRole = ({ role, page = 1, limit = 10, search = '', status, hasDocuments }: UseUsersByRoleParams) => {
   return useQuery<PaginatedUsersResponse>({
-    queryKey: ['users', 'by-role', role, page, limit, search, status],
+    queryKey: ['users', 'by-role', role, page, limit, search, status, hasDocuments],
     queryFn: async () => {
       const params = new URLSearchParams({
         role,
@@ -127,6 +128,10 @@ export const useUsersByRole = ({ role, page = 1, limit = 10, search = '', status
 
       if (status && status !== 'All') {
         params.append('status', status);
+      }
+
+      if (hasDocuments && hasDocuments !== 'all') {
+        params.append('hasDocuments', hasDocuments);
       }
 
       const response = await api.get(`/user/users?${params.toString()}`);

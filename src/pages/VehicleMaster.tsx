@@ -6,57 +6,14 @@ import Button from '../components/Button';
 import ActionDropdown from '../components/ActionDropdown';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleList, type VehiclePage } from '../hooks/useVehicles';
-import QRCode from 'react-qr-code';
+import QRCodeGenerator from '../components/QRCodeGenerator';
 import { FiTruck, FiFileText, FiPackage, FiTool, FiAlertTriangle, FiUser, FiMapPin } from 'react-icons/fi';
-
-const summaryCards = [
-  {
-    label: 'Total Vehicles',
-    value: '_',
-    icon: <FiTruck className="w-6 h-6" />,
-    link: 'View List',
-  },
-  {
-    label: 'Vehicles Rented',
-    value: '_',
-    icon: <FiFileText className="w-6 h-6" />,
-    link: 'View all orders',
-  },
-  {
-    label: 'Accessories',
-    value: '_',
-    icon: <FiPackage className="w-6 h-6" />,
-    link: 'View List',
-  },
-  {
-    label: 'Rented Accessories',
-    value: '_',
-    icon: <FiTool className="w-6 h-6" />,
-    link: 'View List',
-  },
-  {
-    label: 'Documents Expired',
-    value: '_',
-    icon: <FiAlertTriangle className="w-6 h-6" />,
-    link: 'View List',
-  },
-];
-
-const tabs = [
-  'All Vehicles',
-  'Rented Vehicles',
-  'All Accessories',
-  'Accessories Rented',
-  'Maintenance',
-  'Documents Expired',
-  'Disassembles',
-];
 
 const VehicleMaster: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const navigate = useNavigate();
-  const [qrVehicleId, setQrVehicleId] = useState<string | null>(null);
-  const qrRef = React.useRef<HTMLDivElement>(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedVehicleForQR, setSelectedVehicleForQR] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -68,33 +25,53 @@ const VehicleMaster: React.FC = () => {
   const total = (vehiclePage as VehiclePage | undefined)?.total ?? 0;
   // const totalPages = (vehiclePage as VehiclePage | undefined)?.totalPages ?? 1;
 
-  // Download QR code handler
-  const handleDownloadQR = (vehicleNumber: string) => {
-    setQrVehicleId(vehicleNumber);
-    setTimeout(() => {
-      const svg = qrRef.current?.querySelector('svg');
-      if (!svg) return;
-      const serializer = new XMLSerializer();
-      const svgString = serializer.serializeToString(svg);
-      const canvas = document.createElement('canvas');
-      const img = new window.Image();
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const pngFile = canvas.toDataURL('image/png');
-          const downloadLink = document.createElement('a');
-          downloadLink.href = pngFile;
-          downloadLink.download = `vehicle-qr-${vehicleNumber}.png`;
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-        }
-      };
-      img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
-    }, 100); // Wait for QR to render
+  const summaryCards = [
+    {
+      label: 'Total Vehicles',
+      value: total.toString(),
+      icon: <FiTruck className="w-6 h-6" />,
+      link: 'View List',
+    },
+    {
+      label: 'Vehicles Rented',
+      value: '_',
+      icon: <FiFileText className="w-6 h-6" />,
+      link: 'View all orders',
+    },
+    {
+      label: 'Accessories',
+      value: '_',
+      icon: <FiPackage className="w-6 h-6" />,
+      link: 'View List',
+    },
+    {
+      label: 'Rented Accessories',
+      value: '_',
+      icon: <FiTool className="w-6 h-6" />,
+      link: 'View List',
+    },
+    {
+      label: 'Documents Expired',
+      value: '_',
+      icon: <FiAlertTriangle className="w-6 h-6" />,
+      link: 'View List',
+    },
+  ];
+
+  const tabs = [
+    'All Vehicles',
+    'Rented Vehicles',
+    'All Accessories',
+    'Accessories Rented',
+    'Maintenance',
+    'Documents Expired',
+    'Disassembles',
+  ];
+
+  // QR code handler
+  const handleShowQR = (vehicleNumber: string) => {
+    setSelectedVehicleForQR(vehicleNumber);
+    setShowQRModal(true);
   };
 
 
@@ -105,16 +82,21 @@ const VehicleMaster: React.FC = () => {
       key: 'vehicleNumber',
       title: 'Vehicle Number',
       essential: true,
-      render: (value) => (
+      render: (value, record) => (
         <div className="flex items-center gap-2">
           <FiTruck className="text-indigo-600 w-4 h-4" />
-          <span className="font-semibold text-gray-900">{value}</span>
+          <span 
+            className="font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 hover:underline"
+            onClick={() => navigate(`/add-vehicle/${record.id}`)}
+          >
+            {value}
+          </span>
         </div>
       )
     },
     {
       key: 'numberPlateStatus',
-      title: 'Status',
+      title: 'Number Plate Status',
       essential: true,
       render: (value: any) => {
         let color = 'bg-yellow-100 text-yellow-800 border-yellow-300';
@@ -194,8 +176,8 @@ const VehicleMaster: React.FC = () => {
               onClick: () => navigate(`/add-vehicle/${record.id}`),
             },
             {
-              label: 'Download QR',
-              onClick: () => handleDownloadQR(record.vehicleNumber),
+              label: 'Generate QR',
+              onClick: () => handleShowQR(record.vehicleNumber),
             },
           ]}
         />
@@ -270,10 +252,7 @@ const VehicleMaster: React.FC = () => {
 
   return (
     <Layout>
-      {/* Hidden QR code renderer for download */}
-      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }} ref={qrRef}>
-        {qrVehicleId && <QRCode value={qrVehicleId} size={256} />}
-      </div>
+
       <div className="min-h-screen bg-[#f6f7ff] p-8">
         {/* Page Title */}
         <div className="flex items-center justify-between mb-4">
@@ -343,6 +322,36 @@ const VehicleMaster: React.FC = () => {
               pageSizeOptions: [10, 20, 50],
             }}
           />
+        )}
+
+        {/* QR Code Modal */}
+        {showQRModal && selectedVehicleForQR && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Vehicle QR Code</h3>
+                <button
+                  onClick={() => {
+                    setShowQRModal(false);
+                    setSelectedVehicleForQR(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <QRCodeGenerator
+                value={selectedVehicleForQR}
+                title="Vehicle QR Code"
+                downloadFileName={`vehicle-qr-${selectedVehicleForQR}.png`}
+                downloadText="Download QR Code"
+                className="w-full"
+              />
+            </div>
+          </div>
         )}
 
       </div>

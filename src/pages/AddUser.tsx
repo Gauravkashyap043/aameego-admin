@@ -22,7 +22,7 @@ import { useFetchAvailableVehicles } from "../hooks/useFetchAvailableVehicles";
 import { useFetchUser } from "../hooks/useFetchUser";
 import { useUpdateVehicleStatus } from "../hooks/useVehicleStatus";
 import VehicleStatusModal from "../components/VehicleStatusModal";
-import { useUnassignRiderByProfileCode } from "../hooks/useUsers";
+import { useUnassignRiderByProfileCode, useUsersByRole } from "../hooks/useUsers";
 
 const TABS = [
   "Personal information",
@@ -51,6 +51,7 @@ const AddUser: React.FC = () => {
   const { data: userData, isLoading: loadingUser } = useFetchUser(id);
   const updateVehicleStatus = useUpdateVehicleStatus();
   const unassignRiderMutation = useUnassignRiderByProfileCode();
+  const { data: ridersData, isLoading: loadingRiders } = useUsersByRole({ role: 'rider', limit: 100 });
 
   const [tabs, setTabs] = useState(TABS);
   // Add state for rejection/deactivation
@@ -63,6 +64,12 @@ const AddUser: React.FC = () => {
   // Unassign modal state
   const [showUnassignModal, setShowUnassignModal] = useState(false);
   const [selectedUnassignUser, setSelectedUnassignUser] = useState<any>(null);
+
+  // Assign rider modal state
+  const [showAssignRiderModal, setShowAssignRiderModal] = useState(false);
+  const [selectedRider, setSelectedRider] = useState<any>(null);
+  const [riderSearchTerm, setRiderSearchTerm] = useState("");
+  const [assignRiderLoading, setAssignRiderLoading] = useState(false);
 
   // Form fields
   const [fullName, setFullName] = useState("");
@@ -751,6 +758,50 @@ const AddUser: React.FC = () => {
     }
   };
 
+  // Helper function to filter riders based on search
+  const getFilteredRiders = () => {
+    if (!ridersData?.users || ridersData.users.length === 0) return [];
+
+    return ridersData.users.filter((rider: any) => {
+      const matchesSearch = 
+        rider.name?.toLowerCase().includes(riderSearchTerm.toLowerCase()) ||
+        rider.profileCode?.toLowerCase().includes(riderSearchTerm.toLowerCase()) ||
+        rider.authRef?.identifier?.toLowerCase().includes(riderSearchTerm.toLowerCase());
+
+      // Only show riders who are not already assigned to any supervisor
+      const isNotAssigned = !rider.assignedSupervisor;
+
+      return matchesSearch && isNotAssigned;
+    });
+  };
+
+  const handleAssignRider = async () => {
+    if (!selectedRider || !id) return;
+    setAssignRiderLoading(true);
+    try {
+      await api.post("/supervisor-rider/assign-rider", {
+        supervisorId: id,
+        riderId: selectedRider._id,
+      });
+      toast.success("Rider assigned successfully!");
+      setShowAssignRiderModal(false);
+      setSelectedRider(null);
+      setRiderSearchTerm("");
+      // Refetch user data to update the assignedUser list
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to assign rider");
+    } finally {
+      setAssignRiderLoading(false);
+    }
+  };
+
+  const handleCloseAssignRiderModal = () => {
+    setShowAssignRiderModal(false);
+    setSelectedRider(null);
+    setRiderSearchTerm("");
+  };
+
   // Download file function
   const handleDownloadFile = async (url: string, fileName: string) => {
     try {
@@ -937,7 +988,7 @@ const AddUser: React.FC = () => {
     try {
       await api.post("/vehicle-assignment/assign/admin", {
         vehicleNumber: selectedVehicle,
-        riderId: authId, // This should be the user's auth ID (which is correct)
+        riderId: authId, // This should be the user's auth ID
         vehicleCondition: { description: "Assigned by admin" },
       });
       toast.success("Vehicle assigned successfully!");
@@ -2344,15 +2395,29 @@ const AddUser: React.FC = () => {
               )}
               {activeTab === 4 && (
                 <div>
-                  <div className="mb-4 md:mb-6 xl:mb-8">
-                    <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-gray-800 mb-2">  
-                      {role === "SUPERVISOR" ? "Assigned Riders" : "Assigned Supervisor"}
-                    </h3>
-                    <p className="text-gray-600 text-sm md:text-base xl:text-lg">
-                      {role === "SUPERVISOR" 
-                        ? "Manage the riders assigned to this supervisor" 
-                        : "View the supervisor assigned to this rider"}
-                    </p>
+                  <div className="mb-4 md:mb-6 xl:mb-8 flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-gray-800 mb-2">  
+                        {role === "SUPERVISOR" ? "Assigned Riders" : "Assigned Supervisor"}
+                      </h3>
+                      <p className="text-gray-600 text-sm md:text-base xl:text-lg">
+                        {role === "SUPERVISOR" 
+                          ? "Manage the riders assigned to this supervisor" 
+                          : "View the supervisor assigned to this rider"}
+                      </p>
+                    </div>
+                    {role === "SUPERVISOR" && (
+                      <Button 
+                        variant="primary" 
+                        onClick={() => setShowAssignRiderModal(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Assign Rider
+                      </Button>
+                    )}
                   </div>
 
                   {assignedUser.length === 0 ? (
@@ -2372,6 +2437,15 @@ const AddUser: React.FC = () => {
                             : "This rider doesn't have a supervisor assigned yet."}
                         </p>
                       </div>
+                      {role === "SUPERVISOR" && (
+                        <Button 
+                          variant="primary" 
+                          onClick={() => setShowAssignRiderModal(true)}
+                          className="mt-4"
+                        >
+                          Assign Rider
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="grid gap-4 md:gap-6 xl:gap-8">
@@ -2665,6 +2739,114 @@ const AddUser: React.FC = () => {
               disabled={unassignRiderMutation.isPending}
             >
               {unassignRiderMutation.isPending ? "Unassigning..." : "Confirm Unassign"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Assign Rider Modal */}
+      <Modal
+        open={showAssignRiderModal}
+        onClose={handleCloseAssignRiderModal}
+      >
+        <div className="p-6 w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Assign Rider to Supervisor</h3>
+            <button
+              onClick={handleCloseAssignRiderModal}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search riders by name, profile code, or phone number..."
+                value={riderSearchTerm}
+                onChange={(e) => setRiderSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Rider List */}
+          <div className="flex-1 overflow-y-auto border border-gray-200 rounded-lg">
+            {loadingRiders ? (
+              <div className="p-4 text-center text-gray-500">Loading riders...</div>
+            ) : (
+              <div className="max-h-96 overflow-y-auto">
+                {getFilteredRiders().length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    {riderSearchTerm
+                      ? "No riders match your search criteria"
+                      : "No available riders to assign"}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {getFilteredRiders().map((rider: any) => (
+                      <div
+                        key={rider._id}
+                        className={`p-3 cursor-pointer hover:bg-blue-50 transition-colors ${selectedRider?._id === rider._id ? 'bg-blue-100 border-l-4 border-blue-500' : ''}`}
+                        onClick={() => setSelectedRider(rider)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900">
+                              {rider.name || 'No Name'}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              ID: {rider.profileCode}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Phone: {rider.authRef?.identifier || 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Status: {rider.status || 'N/A'}
+                            </div>
+                          </div>
+                          {selectedRider?._id === rider._id && (
+                            <div className="text-blue-500">
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Results Count */}
+          <div className="mt-2 text-xs text-gray-500">
+            Showing {getFilteredRiders().length} of {ridersData?.users?.length || 0} riders
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-3 mt-4 pt-4 border-t">
+            <Button
+              variant="secondary"
+              onClick={handleCloseAssignRiderModal}
+              disabled={assignRiderLoading}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleAssignRider}
+              disabled={!selectedRider || assignRiderLoading}
+              className="flex-1"
+            >
+              {assignRiderLoading ? "Assigning..." : "Assign Rider"}
             </Button>
           </div>
         </div>

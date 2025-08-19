@@ -6,7 +6,7 @@ import type { CollapsibleColumn } from "../components/CollapsibleTable";
 import { useRidersAndSupervisors, useUsersByRole } from "../hooks/useUsers";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
-import InputField from "../components/InputField";
+// import InputField from "../components/InputField";
 import Modal from "../components/Modal";
 import ActionDropdown from "../components/ActionDropdown";
 import SearchableSelect from "../components/SearchableSelect";
@@ -110,14 +110,14 @@ const UserManagement: React.FC = () => {
     setShowProfilePictureModal(true);
   };
 
-  const handleAssignChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setAssignForm((prev) => ({ ...prev, [name]: value }));
-  };
+  // const handleAssignChange = (
+  //   e: React.ChangeEvent<
+  //     HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+  //   >
+  // ) => {
+  //   const { name, value } = e.target;
+  //   setAssignForm((prev) => ({ ...prev, [name]: value }));
+  // };
 
   const handleAssignSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

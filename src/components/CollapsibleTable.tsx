@@ -167,7 +167,7 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto min-h-[400px]">
         {isLoading ? (
           <TableSkeleton
             rows={skeletonRows}
@@ -177,7 +177,7 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
             showActions={skeletonShowActions}
           />
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 min-h-[350px]">
             <thead className="bg-gray-50">
               <tr>
                 <th className="w-8 px-6 py-3"></th>
@@ -199,7 +199,9 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
                     colSpan={essentialColumns.length + 1} 
                     className="px-6 py-12 text-center text-gray-500"
                   >
-                    {emptyMessage}
+                    <div className="min-h-[300px] flex items-center justify-center">
+                      {emptyMessage}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -253,6 +255,15 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
                       </tr>
                     )}
                   </React.Fragment>
+                ))
+              )}
+              
+              {/* Add spacer rows to ensure minimum height for dropdowns */}
+              {data.length > 0 && data.length < 5 && (
+                Array.from({ length: 5 - data.length }, (_, index) => (
+                  <tr key={`spacer-${index}`} className="h-16">
+                    <td colSpan={essentialColumns.length + 1}></td>
+                  </tr>
                 ))
               )}
             </tbody>

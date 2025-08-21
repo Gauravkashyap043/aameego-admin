@@ -407,7 +407,7 @@ const UserManagement: React.FC = () => {
         title: "Aadhar Number",
         essential: false,
         render: (_value: any, record: any) => {
-          return record.document?.aadhaar?.ocrFront?.aadhaarNumber || "-";
+          return record.document?.aadhaar?.ocrFront?.aadharNumber || "-";
         },
       },
       {
@@ -415,7 +415,15 @@ const UserManagement: React.FC = () => {
         title: "DL Number",
         essential: false,
         render: (_value: any, record: any) => {
-          return record.document?.drivingLicense?.ocrFront?.drivingLicenseNumber || "-";
+          return record.document?.dl?.ocrFront?.dlNumber || "-";
+        },
+      },
+      {
+        key: "panNumber",
+        title: "PAN Number",
+        essential: false,
+        render: (_value: any, record: any) => {
+          return record.document?.pan?.ocr?.panNumber || "-";
         },
       },
       {

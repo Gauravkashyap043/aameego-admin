@@ -17,12 +17,28 @@ export const useAddVehicle = () => {
   });
 };
 
-export const useVehicleList = (page = 1, limit = 10, search?: string) => {
+export const useVehicleList = (page = 1, limit = 10, search?: string, rented?: string) => {
   return useQuery<VehiclePage>({
-    queryKey: ['vehicleList', page, limit, search ?? ''],
+    queryKey: ['vehicleList', page, limit, search ?? '', rented ?? ''],
     queryFn: async () => {
-      const res = await api.get('/vehicle', { params: { page, limit, search } });
+      const params: any = { page, limit };
+      if (search) params.search = search;
+      if (rented) params.rented = rented;
+      const res = await api.get('/vehicle', { params });
       return res.data.data as VehiclePage;
+    },
+  });
+};
+
+export const useAllVehicles = (search?: string, rented?: string) => {
+  return useQuery({
+    queryKey: ['allVehicles', search ?? '', rented ?? ''],
+    queryFn: async () => {
+      const params: any = {};
+      if (search) params.search = search;
+      if (rented) params.rented = rented;
+      const res = await api.get('/vehicle/qr-generation', { params });
+      return res.data.data as any[];
     },
   });
 };

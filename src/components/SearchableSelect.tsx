@@ -181,7 +181,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search supervisors..."
+                                placeholder="Search..."
                                 style={{
                                     width: '100%',
                                     padding: 8,
@@ -231,7 +231,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                                         fontSize: 14,
                                     }}
                                 >
-                                    No supervisors found
+                                    No options found
                                 </div>
                             )}
                         </div>

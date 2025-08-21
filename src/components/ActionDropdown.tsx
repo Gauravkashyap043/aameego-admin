@@ -48,7 +48,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({ items, className = '' }
         Actions <span>▼</span>
       </button>
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg z-10">
+        <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded shadow-lg z-[9999]">
           {items.map((item, index) => (
             <button
               key={index}

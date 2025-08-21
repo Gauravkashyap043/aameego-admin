@@ -11,6 +11,8 @@ const pageTitles: Record<string, string> = {
   '/chat': 'Chat',
   '/latest-activity': 'Latest Activity',
   '/add-user': 'Add User',
+  '/add-vehicle': 'Add Vehicle',
+  '/add-asset': 'Add Asset',
 };
 
 const Navbar: React.FC = () => {

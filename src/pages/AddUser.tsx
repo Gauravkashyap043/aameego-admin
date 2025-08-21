@@ -60,7 +60,7 @@ const AddUser: React.FC = () => {
   // const [rejectionReason, setRejectionReason] = useState("");
   const [deactivateReason, setDeactivateReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
-  
+
   // Unassign modal state
   const [showUnassignModal, setShowUnassignModal] = useState(false);
   const [selectedUnassignUser, setSelectedUnassignUser] = useState<any>(null);
@@ -294,7 +294,7 @@ const AddUser: React.FC = () => {
       setDob(
         formatDateForInput(userData.document?.aadhaar?.ocrFront?.dob || "")
       );
-      setAssignedUser(userData.assignedUser);
+      setAssignedUser(userData.assignedUser || []);
       setGender(userData.document?.aadhaar?.ocrFront?.gender || "");
       setFather(userData.fatherName || "");
       setAddress(userData?.addressRef?.address || "");
@@ -745,11 +745,11 @@ const AddUser: React.FC = () => {
         supervisorId: id,
         riderProfileCode: selectedUnassignUser.profileCode,
       });
-      
+
       toast.success('User unassigned successfully!');
       setShowUnassignModal(false);
       setSelectedUnassignUser(null);
-      
+
       // Refetch user data to update the assignedUser list
       window.location.reload();
     } catch (error: any) {
@@ -763,7 +763,7 @@ const AddUser: React.FC = () => {
     if (!ridersData?.users || ridersData.users.length === 0) return [];
 
     return ridersData.users.filter((rider: any) => {
-      const matchesSearch = 
+      const matchesSearch =
         rider.name?.toLowerCase().includes(riderSearchTerm.toLowerCase()) ||
         rider.profileCode?.toLowerCase().includes(riderSearchTerm.toLowerCase()) ||
         rider.authRef?.identifier?.toLowerCase().includes(riderSearchTerm.toLowerCase());
@@ -1255,7 +1255,7 @@ const AddUser: React.FC = () => {
                       type="select"
                       options={[
                         ...((businessPartnersData as any)?.data?.map((partner: any) => ({
-                          label: `${partner.name} (${partner.type})`,
+                          label: `${partner.name} (${partner.code})`,
                           value: partner._id,
                         })) || []),
                       ]}
@@ -1339,7 +1339,15 @@ const AddUser: React.FC = () => {
                             </span>
                           </div>
                           {passbookPreview && (
-                            <div className="flex flex-col items-center mt-2">
+                            <div className="flex flex-col items-center mt-2" onClick={() =>
+                              setPreviewModal({
+                                open: true,
+                                url: passbookPreview?.url,
+                                type: passbookPreview?.isPdf
+                                  ? "pdf"
+                                  : "image",
+                              })
+                            }>
                               {passbookPreview.isPdf ? (
                                 <FiDownload className="text-red-500 text-4xl mb-1" />
                               ) : (
@@ -1399,7 +1407,13 @@ const AddUser: React.FC = () => {
                             </span>
                           </div>
                           {chequePreview && (
-                            <div className="flex flex-col items-center mt-2">
+                            <div className="flex flex-col items-center mt-2" onClick={() =>
+                              setPreviewModal({
+                                open: true,
+                                url: chequePreview?.url,
+                                type: chequePreview?.isPdf ? "pdf" : "image",
+                              })
+                            }>
                               {chequePreview.isPdf ? (
                                 <FiDownload className="text-red-500 text-4xl mb-1" />
                               ) : (
@@ -1513,7 +1527,17 @@ const AddUser: React.FC = () => {
                             </div>
                             {(aadhaarFrontPreview ||
                               userData?.document?.aadhaar?.frontUrl) && (
-                                <div className="flex flex-col items-center mt-2">
+                                <div className="flex flex-col items-center mt-2" onClick={() =>
+                                  setPreviewModal({
+                                    open: true,
+                                    url:
+                                      aadhaarFrontPreview?.url ||
+                                      userData?.document?.aadhaar?.frontUrl,
+                                    type: aadhaarFrontPreview?.isPdf
+                                      ? "pdf"
+                                      : "image",
+                                  })
+                                }>
                                   {aadhaarFrontPreview ? (
                                     aadhaarFrontPreview.isPdf ? (
                                       <FiDownload className="text-red-500 text-4xl mb-1" />
@@ -1588,7 +1612,17 @@ const AddUser: React.FC = () => {
                             </div>
                             {(aadhaarBackPreview ||
                               userData?.document?.aadhaar?.backUrl) && (
-                                <div className="flex flex-col items-center mt-2">
+                                <div className="flex flex-col items-center mt-2" onClick={() =>
+                                  setPreviewModal({
+                                    open: true,
+                                    url:
+                                      aadhaarBackPreview?.url ||
+                                      userData?.document?.aadhaar?.backUrl,
+                                    type: aadhaarBackPreview?.isPdf
+                                      ? "pdf"
+                                      : "image",
+                                  })
+                                }>
                                   {aadhaarBackPreview ? (
                                     aadhaarBackPreview.isPdf ? (
                                       <FiDownload className="text-red-500 text-4xl mb-1" />
@@ -1705,7 +1739,15 @@ const AddUser: React.FC = () => {
                             </span>
                           </div>
                           {(panPreview || userData?.document?.pan?.url) && (
-                            <div className="flex flex-col items-center mt-2">
+                            <div className="flex flex-col items-center mt-2" onClick={() =>
+                              setPreviewModal({
+                                open: true,
+                                url:
+                                  panPreview?.url ||
+                                  userData?.document?.pan?.url,
+                                type: panPreview?.isPdf ? "pdf" : "image",
+                              })
+                            }>
                               {panPreview ? (
                                 panPreview.isPdf ? (
                                   <FiDownload className="text-red-500 text-4xl mb-1" />
@@ -1813,7 +1855,17 @@ const AddUser: React.FC = () => {
                             </div>
                             {(licenseFrontPreview ||
                               userData?.document?.dl?.frontUrl) && (
-                                <div className="flex flex-col items-center mt-2">
+                                <div className="flex flex-col items-center mt-2" onClick={() =>
+                                  setPreviewModal({
+                                    open: true,
+                                    url:
+                                      licenseFrontPreview?.url ||
+                                      userData?.document?.dl?.frontUrl,
+                                    type: licenseFrontPreview?.isPdf
+                                      ? "pdf"
+                                      : "image",
+                                  })
+                                }>
                                   {licenseFrontPreview ? (
                                     licenseFrontPreview.isPdf ? (
                                       <FiDownload className="text-red-500 text-4xl mb-1" />
@@ -1888,7 +1940,17 @@ const AddUser: React.FC = () => {
                             </div>
                             {(licenseBackPreview ||
                               userData?.document?.dl?.backUrl) && (
-                                <div className="flex flex-col items-center mt-2">
+                                <div className="flex flex-col items-center mt-2" onClick={() =>
+                                  setPreviewModal({
+                                    open: true,
+                                    url:
+                                      licenseBackPreview?.url ||
+                                      userData?.document?.dl?.backUrl,
+                                    type: licenseBackPreview?.isPdf
+                                      ? "pdf"
+                                      : "image",
+                                  })
+                                }>
                                   {licenseBackPreview ? (
                                     licenseBackPreview.isPdf ? (
                                       <FiDownload className="text-red-500 text-4xl mb-1" />
@@ -2397,18 +2459,18 @@ const AddUser: React.FC = () => {
                 <div>
                   <div className="mb-4 md:mb-6 xl:mb-8 flex justify-between items-start">
                     <div>
-                      <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-gray-800 mb-2">  
+                      <h3 className="text-lg md:text-xl xl:text-2xl font-bold text-gray-800 mb-2">
                         {role === "SUPERVISOR" ? "Assigned Riders" : "Assigned Supervisor"}
                       </h3>
                       <p className="text-gray-600 text-sm md:text-base xl:text-lg">
-                        {role === "SUPERVISOR" 
-                          ? "Manage the riders assigned to this supervisor" 
+                        {role === "SUPERVISOR"
+                          ? "Manage the riders assigned to this supervisor"
                           : "View the supervisor assigned to this rider"}
                       </p>
                     </div>
                     {role === "SUPERVISOR" && (
-                      <Button 
-                        variant="primary" 
+                      <Button
+                        variant="primary"
                         onClick={() => setShowAssignRiderModal(true)}
                         className="flex items-center gap-2"
                       >
@@ -2420,7 +2482,7 @@ const AddUser: React.FC = () => {
                     )}
                   </div>
 
-                  {assignedUser.length === 0 ? (
+                  {!assignedUser || assignedUser.length === 0 ? (
                     <div className="text-center py-8 md:py-12 xl:py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300">
                       <div className="mb-4">
                         <div className="w-12 h-12 md:w-16 md:h-16 xl:w-20 xl:h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
@@ -2432,14 +2494,14 @@ const AddUser: React.FC = () => {
                           No {role === "SUPERVISOR" ? "Riders" : "Supervisor"} Assigned
                         </h4>
                         <p className="text-sm md:text-base xl:text-lg text-gray-500 px-4">
-                          {role === "SUPERVISOR" 
-                            ? "This supervisor doesn't have any riders assigned yet." 
+                          {role === "SUPERVISOR"
+                            ? "This supervisor doesn't have any riders assigned yet."
                             : "This rider doesn't have a supervisor assigned yet."}
                         </p>
                       </div>
                       {role === "SUPERVISOR" && (
-                        <Button 
-                          variant="primary" 
+                        <Button
+                          variant="primary"
                           onClick={() => setShowAssignRiderModal(true)}
                           className="mt-4"
                         >
@@ -2449,24 +2511,29 @@ const AddUser: React.FC = () => {
                     </div>
                   ) : (
                     <div className="grid gap-4 md:gap-6 xl:gap-8">
-                      {assignedUser.map((item: any) => {
+                      {(assignedUser || []).map((item: any) => {
                         const userData: any =
                           role === "SUPERVISOR"
                             ? item["rider"]
                             : item["supervisor"];
 
+                        // Skip rendering if userData is not available
+                        if (!userData) {
+                          return null;
+                        }
+
                         return (
                           <div
-                            key={item._id}
+                            key={item._id || `item-${Math.random()}`}
                             className="group relative bg-white rounded-xl md:rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
                           >
                             {/* Background Gradient */}
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            
+
                             <div className="relative p-4 md:p-6 xl:p-8">
                               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6 xl:gap-8">
                                 {/* Profile Section */}
-                                <div 
+                                <div
                                   className="flex items-center gap-4 xl:gap-6 cursor-pointer flex-1"
                                   onClick={() => handleProfileClick(userData._id)}
                                 >
@@ -2501,13 +2568,12 @@ const AddUser: React.FC = () => {
                                       <h4 className="text-lg md:text-xl xl:text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors truncate">
                                         {userData.name}
                                       </h4>
-                                      <span className={`px-2 md:px-3 xl:px-4 py-1 xl:py-1.5 rounded-full text-xs xl:text-sm font-semibold uppercase tracking-wider self-start sm:self-auto ${
-                                        userData.status === 'verified' 
-                                          ? 'bg-green-100 text-green-700 border border-green-200' 
-                                          : userData.status === 'pending'
+                                      <span className={`px-2 md:px-3 xl:px-4 py-1 xl:py-1.5 rounded-full text-xs xl:text-sm font-semibold uppercase tracking-wider self-start sm:self-auto ${userData.status === 'verified'
+                                        ? 'bg-green-100 text-green-700 border border-green-200'
+                                        : userData.status === 'pending'
                                           ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
                                           : 'bg-red-100 text-red-700 border border-red-200'
-                                      }`}>
+                                        }`}>
                                         {userData.status}
                                       </span>
                                     </div>
@@ -2520,25 +2586,25 @@ const AddUser: React.FC = () => {
                                           <span className="font-medium">ID:</span> {userData.profileCode}
                                         </span>
                                       </div>
-                                      
+
                                       <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 bg-purple-400 rounded-full"></div>
                                         <span className="text-sm xl:text-base text-gray-600">
                                           <span className="font-medium">Language:</span> {userData.language || 'Not specified'}
                                         </span>
                                       </div>
-                                      
+
                                       <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 bg-green-400 rounded-full"></div>
                                         <span className="text-sm xl:text-base text-gray-600">
                                           <span className="font-medium">Phone:</span> {userData.authRef?.identifier || 'Not available'}
                                         </span>
                                       </div>
-                                      
+
                                       <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 bg-orange-400 rounded-full"></div>
                                         <span className="text-sm xl:text-base text-gray-600">
-                                          <span className="font-medium">Assigned:</span> {new Date(item.assignedAt).toLocaleDateString()}
+                                          <span className="font-medium">Assigned:</span> {item.assignedAt ? new Date(item.assignedAt).toLocaleDateString() : 'N/A'}
                                         </span>
                                       </div>
                                     </div>
@@ -2548,7 +2614,7 @@ const AddUser: React.FC = () => {
                                       <svg className="w-3 h-3 md:w-4 md:h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
-                                      <span className="text-xs md:text-sm xl:text-base">Assigned on {new Date(item.assignedAt).toLocaleString()}</span>
+                                      <span className="text-xs md:text-sm xl:text-base">Assigned on {item.assignedAt ? new Date(item.assignedAt).toLocaleString() : 'N/A'}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -2567,7 +2633,7 @@ const AddUser: React.FC = () => {
                                     <span className="hidden sm:inline">View Profile</span>
                                     <span className="sm:hidden">View</span>
                                   </button>
-                                  
+
                                   <button
                                     onClick={() => handleUnassignClick(userData)}
                                     className="px-3 md:px-4 xl:px-6 py-2 xl:py-3 bg-red-50 text-red-600 rounded-lg md:rounded-xl border border-red-200 hover:bg-red-100 hover:border-red-300 transition-all duration-200 font-medium text-sm xl:text-base flex items-center justify-center gap-2"
@@ -2587,7 +2653,7 @@ const AddUser: React.FC = () => {
                                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 xl:gap-6">
                                     <div className="flex items-center gap-2">
                                       <div className="w-2 h-2 md:w-3 md:h-3 xl:w-3.5 xl:h-3.5 bg-blue-400 rounded-full"></div>
-                                      <span className="text-gray-600 text-xs md:text-sm xl:text-base">Active since {new Date(item.assignedAt).getFullYear()}</span>
+                                      <span className="text-gray-600 text-xs md:text-sm xl:text-base">Active since {item.assignedAt ? new Date(item.assignedAt).getFullYear() : 'N/A'}</span>
                                     </div>
                                     {userData.authRef?.lastLoginAt && (
                                       <div className="flex items-center gap-2">
@@ -2598,7 +2664,7 @@ const AddUser: React.FC = () => {
                                       </div>
                                     )}
                                   </div>
-                                  
+
                                   <div className="flex items-center gap-1 xl:gap-2">
                                     <span className="text-gray-400 text-xs md:text-sm xl:text-base">Role:</span>
                                     <span className="font-medium text-gray-700 capitalize text-xs md:text-sm xl:text-base">

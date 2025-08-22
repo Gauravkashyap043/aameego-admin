@@ -18,7 +18,7 @@ import { RejectUserModal } from "../components/modals/RejectModal";
 import { useCreateOrUpdateDocRemark } from "../hooks/useDocRemark";
 import type { Remark } from "../types";
 import { useFetchVehicleAssignment } from "../hooks/useFetchVehicleAssignment";
-import { useFetchAvailableVehicles } from "../hooks/useFetchAvailableVehicles";
+
 import { useFetchUser } from "../hooks/useFetchUser";
 import { useUpdateVehicleStatus } from "../hooks/useVehicleStatus";
 import VehicleStatusModal from "../components/VehicleStatusModal";
@@ -47,9 +47,7 @@ const AddUser: React.FC = () => {
   const updateUserStatus = useUpdateUserStatus();
   const createOrUpdateDocRemark = useCreateOrUpdateDocRemark();
   const { data: businessPartnersData, isLoading: loadingBusinessPartners } = useFetchBusinessPartners();
-  const { data: vehicleAssignmentsRaw, isLoading: loadingAssignments, error: vehicleAssignmentsError, refetch: refetchAssignments } = useFetchVehicleAssignment(authId);
-  const vehicleAssignments: any[] = Array.isArray(vehicleAssignmentsRaw) ? vehicleAssignmentsRaw : [];
-  const { data: availableVehicles = [], isLoading: loadingAvailableVehicles } = useFetchAvailableVehicles();
+  const { refetch: refetchAssignments } = useFetchVehicleAssignment(authId);
   const { data: userData, isLoading: loadingUser } = useFetchUser(userId);
   const updateVehicleStatus = useUpdateVehicleStatus();
   const unassignRiderMutation = useUnassignRiderByProfileCode();
@@ -946,76 +944,11 @@ const AddUser: React.FC = () => {
   // };
   // ...existing code...
 
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState("");
-  const [assignLoading, setAssignLoading] = useState(false);
-  const [vehicleSearchTerm, setVehicleSearchTerm] = useState("");
-  const [vehicleFilterType, setVehicleFilterType] = useState("");
-  const [vehicleFilterCity, setVehicleFilterCity] = useState("");
+
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
 
-  // Helper function to filter vehicles based on search and filters
-  const getFilteredVehicles = () => {
-    if (!availableVehicles || availableVehicles.length === 0) return [];
 
-    return availableVehicles.filter((vehicle: any) => {
-      const matchesSearch = vehicle.vehicleNumber?.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-        vehicle.vehicleModel?.name?.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-        vehicle.vehicleType?.name?.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-        vehicle.hub?.name?.toLowerCase().includes(vehicleSearchTerm.toLowerCase()) ||
-        vehicle.city?.name?.toLowerCase().includes(vehicleSearchTerm.toLowerCase());
-
-      const matchesType = !vehicleFilterType || vehicle.vehicleType?.name === vehicleFilterType;
-      const matchesCity = !vehicleFilterCity || vehicle.city?.name === vehicleFilterCity;
-
-      return matchesSearch && matchesType && matchesCity;
-    });
-  };
-
-  // Get unique vehicle types and cities for filters
-  const getUniqueVehicleTypes = (): string[] => {
-    const types = availableVehicles.map((v: any) => v.vehicleType?.name).filter(Boolean);
-    return [...new Set(types)] as string[];
-  };
-
-  const getUniqueCities = (): string[] => {
-    const cities = availableVehicles.map((v: any) => v.city?.name).filter(Boolean);
-    return [...new Set(cities)] as string[];
-  };
-
-  const handleAssignVehicle = async () => {
-    if (!selectedVehicle || !authId) return;
-    setAssignLoading(true);
-    try {
-      await api.post("/vehicle-assignment/assign/admin", {
-        vehicleNumber: selectedVehicle,
-        riderId: authId, // This should be the user's auth ID
-        vehicleCondition: { description: "Assigned by admin" },
-      });
-      toast.success("Vehicle assigned successfully!");
-      setShowAssignModal(false);
-      setSelectedVehicle("");
-      // Reset filters
-      setVehicleSearchTerm("");
-      setVehicleFilterType("");
-      setVehicleFilterCity("");
-      // Refetch assignments
-      setTimeout(() => window.location.reload(), 500);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to assign vehicle");
-    } finally {
-      setAssignLoading(false);
-    }
-  };
-
-  const handleCloseAssignModal = () => {
-    setShowAssignModal(false);
-    setSelectedVehicle("");
-    setVehicleSearchTerm("");
-    setVehicleFilterType("");
-    setVehicleFilterCity("");
-  };
 
   const handleVehicleStatusUpdate = (data: any) => {
     if (!selectedAssignment) return;
@@ -1036,10 +969,7 @@ const AddUser: React.FC = () => {
     setSelectedAssignment(null);
   };
 
-  const handleOpenStatusModal = (assignment: any) => {
-    setSelectedAssignment(assignment);
-    setShowStatusModal(true);
-  };
+
 
   if (!userId) return <Navigate to="/user-management" replace />;
 

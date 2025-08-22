@@ -21,6 +21,8 @@ export interface AssignVehicalModalProps {
   getUniqueVehicleTypes: () => string[];
   getUniqueCities: () => string[];
   getFilteredVehicles: () => unknown[];
+  vehicleCondition?: string;
+  setVehicleCondition?: (condition: string) => void;
 }
 
 const AssignVehicalModal = (props: AssignVehicalModalProps) => {
@@ -154,6 +156,26 @@ const AssignVehicalModal = (props: AssignVehicalModalProps) => {
           {props.availableVehicles.length} vehicles
         </div>
 
+        {/* Vehicle Condition Input */}
+        {props.selectedVehicle && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Vehicle Condition Description *
+            </label>
+            <textarea
+              value={props.vehicleCondition || ""}
+              onChange={(e) => props.setVehicleCondition?.(e.target.value)}
+              placeholder="Describe the current condition of the vehicle..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              rows={3}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Please provide a detailed description of the vehicle's current condition
+            </p>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex space-x-3 mt-4 pt-4 border-t">
           <Button
@@ -167,7 +189,7 @@ const AssignVehicalModal = (props: AssignVehicalModalProps) => {
           <Button
             variant="primary"
             onClick={props.handleAssignVehicle}
-            disabled={!props.selectedVehicle || props.assignLoading}
+            disabled={!props.selectedVehicle || !props.vehicleCondition?.trim() || props.assignLoading}
             className="flex-1"
           >
             {props.assignLoading ? "Assigning..." : "Assign Vehicle"}

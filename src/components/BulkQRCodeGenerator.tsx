@@ -15,11 +15,17 @@ interface Vehicle {
 interface BulkQRCodeGeneratorProps {
   vehicles: Vehicle[];
   onClose: () => void;
+  isLoading?: boolean;
+  error?: Error | null;
+  onRetry?: () => void;
 }
 
 const BulkQRCodeGenerator: React.FC<BulkQRCodeGeneratorProps> = ({
   vehicles,
   onClose,
+  isLoading = false,
+  error = null,
+  onRetry,
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -100,21 +106,9 @@ const BulkQRCodeGenerator: React.FC<BulkQRCodeGeneratorProps> = ({
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      const qrSize = 40; // QR code size in mm
-      const textHeight = 12; // Text height in mm (increased from 10)
-      const spacing = 15; // Spacing between QR codes
-
-      const qrCodesPerRow = Math.floor(
-        (pageWidth - 2 * margin) / (qrSize + spacing)
-      );
-      const qrCodesPerPage =
-        qrCodesPerRow *
-        Math.floor((pageHeight - 2 * margin) / (qrSize + textHeight + spacing));
-
-      let currentPage = 1;
-      let currentRow = 0;
-      let currentCol = 0;
+      // const margin = 20;
+      const qrSize = 80; // Larger QR code size for single per page
+      const textHeight = 20; // More space for text
 
       // Add title to first page
       pdf.setFontSize(20);
@@ -145,17 +139,14 @@ const BulkQRCodeGenerator: React.FC<BulkQRCodeGeneratorProps> = ({
           continue;
         }
 
-        // Check if we need a new page
-        if (i > 0 && i % qrCodesPerPage === 0) {
+        // Add new page for each vehicle (except the first one)
+        if (i > 0) {
           pdf.addPage();
-          currentPage++;
-          currentRow = 0;
-          currentCol = 0;
         }
 
-        // Calculate position
-        const x = margin + currentCol * (qrSize + spacing);
-        const y = margin + 50 + currentRow * (qrSize + textHeight + spacing); // 50 for title space (increased from 40)
+        // Calculate position for center of page
+        const x = (pageWidth - qrSize) / 2;
+        const y = (pageHeight - qrSize - textHeight) / 2;
 
         // Generate QR code as image
         const svg = qrRef.querySelector("svg");
@@ -186,31 +177,25 @@ const BulkQRCodeGenerator: React.FC<BulkQRCodeGeneratorProps> = ({
         }
 
         // Add vehicle information
-        pdf.setFontSize(8);
-        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
         pdf.text(
           `Vehicle: ${vehicle.vehicleNumber}`,
           x + qrSize / 2,
-          y + qrSize + 5,
+          y + qrSize + 8,
           { align: "center" }
         );
 
         // Add model if available
         if (vehicle.vehicleModel?.name) {
-          pdf.setFontSize(7);
+          pdf.setFontSize(12);
+          pdf.setFont("helvetica", "bold");
           pdf.text(
             `Vehicle Model: ${vehicle.vehicleModel.name}`,
             x + qrSize / 2,
-            y + qrSize + 10,
+            y + qrSize + 16,
             { align: "center" }
           );
-        }
-
-        // Update position for next QR code
-        currentCol++;
-        if (currentCol >= qrCodesPerRow) {
-          currentCol = 0;
-          currentRow++;
         }
 
         // Update progress
@@ -409,7 +394,35 @@ const BulkQRCodeGenerator: React.FC<BulkQRCodeGeneratorProps> = ({
 
         {/* Preview Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto">
-          {filteredVehicles.length === 0 && searchTerm ? (
+          {isLoading ? (
+            <div className="col-span-full text-center py-8">
+              <div className="flex items-center justify-center gap-2">
+                <FiLoader className="w-5 h-5 animate-spin text-blue-600" />
+                <p className="text-gray-500">Loading vehicles...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="col-span-full text-center py-8">
+              <div className="flex flex-col items-center gap-3">
+                <div className="text-red-500">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <p className="text-gray-700 font-medium">Failed to load vehicles</p>
+                <p className="text-sm text-gray-500">{error.message}</p>
+                {onRetry && (
+                  <Button
+                    variant="secondary"
+                    onClick={onRetry}
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : filteredVehicles.length === 0 && searchTerm ? (
             <div className="col-span-full text-center py-8">
               <p className="text-gray-500">
                 No vehicles found matching "{searchTerm}"
@@ -428,10 +441,11 @@ const BulkQRCodeGenerator: React.FC<BulkQRCodeGeneratorProps> = ({
                 ref={(el) => {
                   qrRefs.current[vehicle._id] = el;
                 }}
-                className={`bg-white p-3 rounded-lg border text-center relative ${
+                onClick={() => handleSelectVehicle(vehicle._id)}
+                className={`bg-white p-3 rounded-lg border text-center relative cursor-pointer transition-all duration-200 hover:shadow-md ${
                   selectedVehicles.has(vehicle._id)
-                    ? "ring-2 ring-blue-500"
-                    : "opacity-60"
+                    ? "ring-2 ring-blue-500 bg-blue-50"
+                    : "opacity-60 hover:opacity-80"
                 }`}
               >
                 {/* Checkbox */}
@@ -440,7 +454,7 @@ const BulkQRCodeGenerator: React.FC<BulkQRCodeGeneratorProps> = ({
                     type="checkbox"
                     checked={selectedVehicles.has(vehicle._id)}
                     onChange={() => handleSelectVehicle(vehicle._id)}
-                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 pointer-events-none"
                   />
                 </div>
 
@@ -464,8 +478,7 @@ const BulkQRCodeGenerator: React.FC<BulkQRCodeGeneratorProps> = ({
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-500">
-            The PDF will contain selected QR codes arranged in a grid format,
-            with vehicle information displayed below each QR code.
+            The PDF will contain one QR code per page, centered on each page with vehicle information displayed below.
           </p>
           <p className="text-xs text-gray-400 mt-1">
             Use the search bar to find specific vehicles. Selected vehicles are

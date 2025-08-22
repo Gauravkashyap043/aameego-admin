@@ -4,6 +4,7 @@ import CollapsibleTable from "../components/CollapsibleTable";
 // import type { Column } from "../components/Table";
 import type { CollapsibleColumn } from "../components/CollapsibleTable";
 import { useRidersAndSupervisors, useUsersByRole } from "../hooks/useUsers";
+import { useFetchBusinessPartners } from "../hooks/useFetchBusinessPartners";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 // import InputField from "../components/InputField";
@@ -31,6 +32,7 @@ const UserManagement: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [hasDocumentsFilter, setHasDocumentsFilter] = useState("all");
+  const [businessPartnerFilter, setBusinessPartnerFilter] = useState("all");
 
   // Assignment modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -64,10 +66,14 @@ const UserManagement: React.FC = () => {
     search: debouncedSearch,
     status: statusFilter,
     hasDocuments: hasDocumentsFilter,
+    businessPartnerId: businessPartnerFilter !== "all" ? businessPartnerFilter : undefined,
   });
 
   // Keep old API for supervisor options in assign modal and tab counts
   const { data: allUsersData } = useRidersAndSupervisors();
+  
+  // Fetch business partners for filter
+  const { data: businessPartnersData } = useFetchBusinessPartners();
 
   // Debounce search to avoid too many API calls
   useEffect(() => {
@@ -86,6 +92,7 @@ const UserManagement: React.FC = () => {
     setDebouncedSearch("");
     setStatusFilter("All");
     setHasDocumentsFilter("all");
+    setBusinessPartnerFilter("all");
   }, [activeTab]);
 
   useEffect(() => {
@@ -403,6 +410,64 @@ const UserManagement: React.FC = () => {
         },
       },
       {
+        key: "businessPartner",
+        title: "Business Partner",
+        essential: false,
+        render: (_value: any, record: any) => {
+          const businessPartner = record.businessPartnerRef;
+          if (!businessPartner) {
+            return (
+              <span className="text-gray-400 italic">Not assigned</span>
+            );
+          }
+          return (
+            <div className="flex flex-col">
+              <div className="font-medium text-gray-900">
+                {businessPartner.name || 'N/A'}
+              </div>
+              <div className="text-sm text-gray-500">
+                {businessPartner.type} • {businessPartner.code}
+              </div>
+              {businessPartner.commissionRate > 0 && (
+                <div className="text-xs text-blue-600">
+                  Commission: {businessPartner.commissionRate}%
+                </div>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        key: "currentVehicle",
+        title: "Current Vehicle",
+        essential: false,
+        render: (_value: any, record: any) => {
+          const vehicleAssignment = record.currentVehicleAssignment;
+          if (!vehicleAssignment || !vehicleAssignment.vehicle) {
+            return (
+              <span className="text-gray-400 italic">No vehicle assigned</span>
+            );
+          }
+          const vehicle = vehicleAssignment.vehicle;
+          return (
+            <div className="flex flex-col">
+              <div className="font-medium text-gray-900">
+                {vehicle.vehicleNumber || 'N/A'}
+              </div>
+              <div className="text-sm text-gray-500">
+                {vehicle.vehicleModel?.name || 'N/A'} • {vehicle.vehicleType?.name || 'N/A'}
+              </div>
+              <div className="text-xs text-gray-400">
+                {vehicle.hub?.name || 'N/A'} • {vehicle.city?.name || 'N/A'}
+              </div>
+              <div className="text-xs text-blue-600">
+                Assigned: {new Date(vehicleAssignment.assignmentDate).toLocaleDateString('en-GB')}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
         key: "aadharNumber",
         title: "Aadhar Number",
         essential: false,
@@ -549,6 +614,28 @@ const UserManagement: React.FC = () => {
                   <option value="false">Without Documents</option>
                 </select>
               </div>
+
+              {/* Business Partner Filter - Only show for riders */}
+              {activeTab === "rider" && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">Business Partner:</label>
+                  <select
+                    value={businessPartnerFilter}
+                    onChange={(e) => {
+                      setBusinessPartnerFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                  >
+                    <option value="all">All Business Partners</option>
+                    {businessPartnersData?.data?.map((partner) => (
+                      <option key={partner._id} value={partner._id}>
+                        {partner.name} ({partner.type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
             
             <CollapsibleTable

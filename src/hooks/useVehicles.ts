@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import api from "../services/api";
 import API_ENDPOINTS from "../constants/apiEndpoints";
 import type { Vehicle } from "../types";
@@ -23,21 +23,23 @@ export const useVehicleList = (
   page = 1,
   limit = 10,
   search?: string,
-  rented?: string
+  rented?: string,
+  status?: string
 ) => {
   return useQuery<VehiclePage>({
-    queryKey: ["vehicleList", page, limit, search ?? "", rented ?? ""],
+    queryKey: ["vehicleList", page, limit, search ?? "", rented ?? "", status ?? ""],
     queryFn: async () => {
       const params: any = { page, limit };
       if (search) params.search = search;
       if (rented) params.rented = rented;
+      if (status) params.status = status;
       const res = await api.get("/vehicle", { params });
       return res.data.data as VehiclePage;
     },
   });
 };
 
-export const useAllVehicles = (search?: string, rented?: string) => {
+export const useAllVehicles = (search?: string, rented?: string, options?: { enabled?: boolean; retry?: number; retryDelay?: number }) => {
   return useQuery({
     queryKey: ["allVehicles", search ?? "", rented ?? ""],
     queryFn: async () => {
@@ -47,6 +49,9 @@ export const useAllVehicles = (search?: string, rented?: string) => {
       const res = await api.get("/vehicle/qr-generation", { params });
       return res.data.data as any[];
     },
+    enabled: options?.enabled ?? true,
+    retry: options?.retry ?? 2,
+    retryDelay: options?.retryDelay ?? 1000,
   });
 };
 

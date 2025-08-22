@@ -23,6 +23,7 @@ const VehicleMaster: React.FC = () => {
   const [search, setSearch] = useState('');
   const [submittedSearch, setSubmittedSearch] = useState('');
   const [rentedFilter, setRentedFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
 
   // Determine the rented filter based on active tab
   const getRentedFilterForTab = () => {
@@ -32,12 +33,21 @@ const VehicleMaster: React.FC = () => {
     return rentedFilter; // Use manual filter for other tabs
   };
 
-  const { data: vehiclePage, isLoading: loadingVehicles } = useVehicleList(page, limit, submittedSearch, getRentedFilterForTab());
+  const { data: vehiclePage, isLoading: loadingVehicles } = useVehicleList(page, limit, submittedSearch, getRentedFilterForTab(), statusFilter);
   const vehicles = (vehiclePage as VehiclePage | undefined)?.items ?? [];
   const total = (vehiclePage as VehiclePage | undefined)?.total ?? 0;
 
   // Hook for fetching all vehicles for bulk QR generation
-  const { data: allVehicles = [], isLoading: loadingAllVehicles } = useAllVehicles(submittedSearch, getRentedFilterForTab());
+  const {
+    data: allVehicles = [],
+    isLoading: loadingAllVehicles,
+    error: allVehiclesError,
+    refetch: refetchAllVehicles
+  } = useAllVehicles(submittedSearch, getRentedFilterForTab(), {
+    enabled: false, // Don't fetch automatically
+    retry: 2, // Retry failed requests up to 2 times
+    retryDelay: 1000, // Wait 1 second between retries
+  });
 
   // Assets data
   const { data: assetsPage, isLoading: loadingAssets } = useVehicleAssetList(page, limit, {
@@ -103,11 +113,14 @@ const VehicleMaster: React.FC = () => {
   const handleTabClick = (tabIndex: number) => {
     setActiveTab(tabIndex);
     setPage(1); // Reset to first page when changing tabs
-    
+
     // Reset manual filter when switching to "Rented Vehicles" tab
     if (tabIndex === 1) {
       setRentedFilter('');
     }
+    
+    // Reset status filter when changing tabs
+    setStatusFilter('');
   };
 
 
@@ -121,7 +134,7 @@ const VehicleMaster: React.FC = () => {
       render: (value, record) => (
         <div className="flex items-center gap-2">
           <FiTruck className="text-indigo-600 w-4 h-4" />
-          <span 
+          <span
             className="font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 hover:underline"
             onClick={() => navigate(`/add-vehicle/${record.id}`)}
           >
@@ -131,9 +144,49 @@ const VehicleMaster: React.FC = () => {
       )
     },
     {
+      key: 'vehicleStatus',
+      title: 'Vehicle Status',
+      essential: true,
+      render: (value: any) => {
+        let color = 'bg-gray-100 text-gray-800 border-gray-300';
+        let dot = 'bg-gray-400';
+        let label = 'Unknown';
+        
+        switch (value) {
+          case 'available':
+            color = 'bg-green-100 text-green-800 border-green-300';
+            dot = 'bg-green-500';
+            label = 'Available';
+            break;
+          case 'assigned':
+            color = 'bg-blue-100 text-blue-800 border-blue-300';
+            dot = 'bg-blue-500';
+            label = 'Assigned';
+            break;
+          case 'maintenance':
+            color = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+            dot = 'bg-yellow-500';
+            label = 'Maintenance';
+            break;
+          case 'damaged':
+            color = 'bg-red-100 text-red-800 border-red-300';
+            dot = 'bg-red-500';
+            label = 'Damaged';
+            break;
+        }
+        
+        return (
+          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold border ${color}`}>
+            <span className={`w-2 h-2 rounded-full mr-2 ${dot}`}></span>
+            {label}
+          </span>
+        );
+      },
+    },
+    {
       key: 'numberPlateStatus',
       title: 'Number Plate Status',
-      essential: true,
+      essential: false,
       render: (value: any) => {
         let color = 'bg-yellow-100 text-yellow-800 border-yellow-300';
         let dot = 'bg-yellow-400';
@@ -173,11 +226,11 @@ const VehicleMaster: React.FC = () => {
         if (!value) return <span className="text-gray-400">-</span>;
         const rider = value.rider;
         if (!rider) return <span className="text-gray-400">Unknown Rider</span>;
-        
+
         const name = rider?.accountRef?.name || rider.name || 'No Name';
         const phone = rider?.accountRef?.identifier || rider.identifier || 'No Phone';
         // const profileCode = rider?.profileCode || rider.profileCode || 'No Code';
-        
+
         return (
           <div className="flex items-center gap-2">
             <FiUser className="text-blue-600 w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -275,14 +328,32 @@ const VehicleMaster: React.FC = () => {
       title: 'Asset Name',
       essential: true,
       render: (value, record) => (
-        <div className="flex items-center gap-2">
-          <FiPackage className="text-indigo-600 w-4 h-4" />
-          <span 
-            className="font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 hover:underline"
-            onClick={() => navigate(`/add-asset/${record.id}`)}
-          >
-            {value || 'Unnamed Asset'}
-          </span>
+        <div className="flex items-center gap-3">
+          {record.image ? (
+            <img
+              src={record.image}
+              alt={value || 'Asset'}
+              className="w-10 h-10 object-cover rounded-md border border-gray-200 flex-shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center border border-gray-200 flex-shrink-0">
+              <FiPackage className="w-5 h-5 text-gray-400" />
+            </div>
+          )}
+          <div className="flex flex-col min-w-0">
+            <span
+              className="font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 hover:underline truncate"
+              onClick={() => navigate(`/add-asset/${record.id}`)}
+              title={value || 'Unnamed Asset'}
+            >
+              {value || 'Unnamed Asset'}
+            </span>
+            {record.serialNumber && (
+              <span className="text-xs text-gray-500 truncate">
+                SN: {record.serialNumber}
+              </span>
+            )}
+          </div>
         </div>
       )
     },
@@ -336,31 +407,17 @@ const VehicleMaster: React.FC = () => {
       },
     },
     {
-      key: 'condition',
-      title: 'Condition',
+      key: 'ownership',
+      title: 'Ownership',
       essential: true,
-      render: (value: any) => {
-        let color = 'bg-gray-100 text-gray-800 border-gray-300';
-        let label = 'Unknown';
-        if (value === 'new') {
-          color = 'bg-green-100 text-green-800 border-green-300';
-          label = 'New';
-        } else if (value === 'good') {
-          color = 'bg-blue-100 text-blue-800 border-blue-300';
-          label = 'Good';
-        } else if (value === 'fair') {
-          color = 'bg-yellow-100 text-yellow-800 border-yellow-300';
-          label = 'Fair';
-        } else if (value === 'poor') {
-          color = 'bg-red-100 text-red-800 border-red-300';
-          label = 'Poor';
-        }
-        return (
-          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold border ${color}`}>
-            {label}
-          </span>
-        );
-      },
+      render: (value: any) => (
+        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${value === 'owned'
+          ? 'bg-green-100 text-green-800 border border-green-300'
+          : 'bg-blue-100 text-blue-800 border border-blue-300'
+          }`}>
+          {value === 'owned' ? 'Owned' : 'Rented'}
+        </span>
+      )
     },
     {
       key: 'actions',
@@ -398,35 +455,33 @@ const VehicleMaster: React.FC = () => {
       render: (value: any) => value || '-'
     },
     {
-      key: 'ownership',
-      title: 'Ownership',
+      key: 'condition',
+      title: 'Condition',
       essential: false,
-      render: (value: any) => (
-        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
-          value === 'owned' 
-            ? 'bg-green-100 text-green-800 border border-green-300' 
-            : 'bg-blue-100 text-blue-800 border border-blue-300'
-        }`}>
-          {value === 'owned' ? 'Owned' : 'Rented'}
-        </span>
-      )
+      render: (value: any) => {
+        let color = 'bg-gray-100 text-gray-800 border-gray-300';
+        let label = 'Unknown';
+        if (value === 'new') {
+          color = 'bg-green-100 text-green-800 border-green-300';
+          label = 'New';
+        } else if (value === 'good') {
+          color = 'bg-blue-100 text-blue-800 border-blue-300';
+          label = 'Good';
+        } else if (value === 'fair') {
+          color = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+          label = 'Fair';
+        } else if (value === 'poor') {
+          color = 'bg-red-100 text-red-800 border-red-300';
+          label = 'Poor';
+        }
+        return (
+          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold border ${color}`}>
+            {label}
+          </span>
+        );
+      },
     },
-    {
-      key: 'image',
-      title: 'Image',
-      essential: false,
-      render: (value: any) => value ? (
-        <img 
-          src={value} 
-          alt="Asset" 
-          className="w-12 h-12 object-cover rounded-md border"
-        />
-      ) : (
-        <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
-          <FiPackage className="w-6 h-6 text-gray-400" />
-        </div>
-      )
-    },
+
     {
       key: 'assignedTo',
       title: 'Assigned To',
@@ -476,6 +531,7 @@ const VehicleMaster: React.FC = () => {
     oem: v.oem,
     vehicleModel: v.vehicleModel,
     vehicleRCNumber: v.vehicleRCNumber,
+    vehicleStatus: v.vehicleStatus,
     numberPlateStatus: v.numberPlateStatus,
     invoiceAmount: v.invoiceAmount,
     deliveryDate: v.deliveryDate,
@@ -507,9 +563,12 @@ const VehicleMaster: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold text-[#3B36FF]">Vehicle Master</h2>
           <div className="flex gap-2">
-            <Button 
-              variant="secondary" 
-              onClick={() => setShowBulkQRModal(true)}
+            <Button
+              variant="secondary"
+              onClick={() => {
+                refetchAllVehicles();
+                setShowBulkQRModal(true);
+              }}
               disabled={loadingAllVehicles}
               className="flex items-center gap-2"
             >
@@ -573,6 +632,23 @@ const VehicleMaster: React.FC = () => {
                 <option value="">All Vehicles</option>
                 <option value="false">Owned Vehicles</option>
                 <option value="true">Rented Vehicles</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Status:</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1); // Reset to first page when filter changes
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              >
+                <option value="">All Status</option>
+                <option value="available">Available</option>
+                <option value="assigned">Assigned</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="damaged">Damaged</option>
               </select>
             </div>
           </div>
@@ -664,7 +740,7 @@ const VehicleMaster: React.FC = () => {
                   </svg>
                 </button>
               </div>
-              
+
               <QRCodeGenerator
                 value={selectedVehicleForQR}
                 title="Vehicle QR Code"
@@ -677,10 +753,13 @@ const VehicleMaster: React.FC = () => {
         )}
 
         {/* Bulk QR Code Generator Modal */}
-        {showBulkQRModal && allVehicles && (
+        {showBulkQRModal && (
           <BulkQRCodeGenerator
             vehicles={allVehicles}
             onClose={() => setShowBulkQRModal(false)}
+            isLoading={loadingAllVehicles}
+            error={allVehiclesError}
+            onRetry={refetchAllVehicles}
           />
         )}
 

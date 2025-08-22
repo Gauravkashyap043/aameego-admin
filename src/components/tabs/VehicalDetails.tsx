@@ -62,10 +62,13 @@ const VehicalDetails = ({ userId }: VehicalDetailsProps) => {
   const handleVehicleStatusUpdate = (data: any) => {
     if (!selectedAssignment) return;
 
+    // Use updateVehicleStatus for all statuses including "returned"
     updateVehicleStatus.mutate(
       {
         vehicleId: selectedAssignment.vehicle._id,
         ...data,
+        // Add returnDate for returned status
+        ...(data.status === 'returned' && { returnDate: new Date() }),
       },
       {
         onSuccess: () => {

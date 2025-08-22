@@ -98,6 +98,41 @@ export const useUnassignVehicle = () => {
   });
 };
 
+// Hook for returning a vehicle
+export const useReturnVehicle = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      assignmentId, 
+      returnDate, 
+      notes, 
+      returnVehicleCondition 
+    }: { 
+      assignmentId: string; 
+      returnDate: Date; 
+      notes?: string; 
+      returnVehicleCondition?: { description?: string; images?: string[]; videos?: string[]; }
+    }) => {
+      const response = await api.put(`/vehicle-assignment/return/${assignmentId}`, {
+        returnDate,
+        notes,
+        returnVehicleCondition,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Vehicle returned successfully!');
+      // Invalidate relevant queries to refetch data
+      queryClient.invalidateQueries({ queryKey: ['vehicle-assignment'] });
+      queryClient.invalidateQueries({ queryKey: ['availableVehicles'] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to return vehicle');
+    },
+  });
+};
+
 // Hook for updating vehicle status
 export const useUpdateVehicleStatus = () => {
   const queryClient = useQueryClient();

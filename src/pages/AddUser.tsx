@@ -20,7 +20,7 @@ import type { Remark } from "../types";
 import { useFetchVehicleAssignment } from "../hooks/useFetchVehicleAssignment";
 
 import { useFetchUser } from "../hooks/useFetchUser";
-import { useUpdateVehicleStatus } from "../hooks/useVehicleStatus";
+import { useUpdateVehicleStatus } from "../hooks/useVehicleAssignment";
 import VehicleStatusModal from "../components/VehicleStatusModal";
 import { useUnassignRiderByProfileCode, useUsersByRole } from "../hooks/useUsers";
 import VehicalDetails from "../components/tabs/VehicalDetails";
@@ -953,17 +953,23 @@ const AddUser: React.FC = () => {
   const handleVehicleStatusUpdate = (data: any) => {
     if (!selectedAssignment) return;
 
-    updateVehicleStatus.mutate({
-      assignmentId: selectedAssignment._id,
-      data
-    }, {
-      onSuccess: () => {
-        // Refetch vehicle assignments after successful update
-        setTimeout(() => {
-          refetchAssignments();
-        }, 500);
+    // Use updateVehicleStatus for all statuses including "returned"
+    updateVehicleStatus.mutate(
+      {
+        vehicleId: selectedAssignment.vehicle._id,
+        ...data,
+        // Add returnDate for returned status
+        ...(data.status === 'returned' && { returnDate: new Date() }),
+      },
+      {
+        onSuccess: () => {
+          // Refetch vehicle assignments after successful update
+          setTimeout(() => {
+            refetchAssignments();
+          }, 500);
+        },
       }
-    });
+    );
 
     setShowStatusModal(false);
     setSelectedAssignment(null);

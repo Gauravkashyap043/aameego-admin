@@ -76,3 +76,19 @@ export const useAvailableVehicles = () => {
     enabled: false,
   });
 };
+
+export const useMaintenanceVehicles = (
+  page = 1,
+  limit = 10,
+  search?: string
+) => {
+  return useQuery<VehiclePage>({
+    queryKey: ["maintenanceVehicles", page, limit, search ?? ""],
+    queryFn: async () => {
+      const params: any = { page, limit };
+      if (search) params.search = search;
+      const res = await api.get("/vehicle/maintenance", { params });
+      return res.data.data as VehiclePage;
+    },
+  });
+};

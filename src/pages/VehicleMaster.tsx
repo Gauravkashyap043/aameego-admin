@@ -5,7 +5,7 @@ import type { CollapsibleColumn } from '../components/CollapsibleTable';
 import Button from '../components/Button';
 import ActionDropdown from '../components/ActionDropdown';
 import { useNavigate } from 'react-router-dom';
-import { useVehicleList, useAllVehicles, type VehiclePage } from '../hooks/useVehicles';
+import { useVehicleList, useAllVehicles, useMaintenanceVehicles, type VehiclePage } from '../hooks/useVehicles';
 import { useVehicleAssetList, useAssetStatistics, type VehicleAssetPage } from '../hooks/useVehicleAssets';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import BulkQRCodeGenerator from '../components/BulkQRCodeGenerator';
@@ -37,6 +37,11 @@ const VehicleMaster: React.FC = () => {
   const vehicles = (vehiclePage as VehiclePage | undefined)?.items ?? [];
   const total = (vehiclePage as VehiclePage | undefined)?.total ?? 0;
 
+  // Maintenance vehicles data
+  const { data: maintenancePage, isLoading: loadingMaintenance } = useMaintenanceVehicles(page, limit, submittedSearch);
+  const maintenanceVehicles = (maintenancePage as VehiclePage | undefined)?.items ?? [];
+  const maintenanceTotal = (maintenancePage as VehiclePage | undefined)?.total ?? 0;
+
   // Hook for fetching all vehicles for bulk QR generation
   const {
     data: allVehicles = [],
@@ -63,13 +68,13 @@ const VehicleMaster: React.FC = () => {
   const summaryCards = [
     {
       label: 'Total Vehicles',
-      value: total.toString(),
+      value: assetStats?.totalVehicles?.toString() || total.toString(),
       icon: <FiTruck className="w-6 h-6" />,
       link: 'View List',
     },
     {
       label: 'Vehicles Rented',
-      value: '_',
+      value: assetStats?.rentedVehicles?.toString() || '0',
       icon: <FiFileText className="w-6 h-6" />,
       link: 'View all orders',
     },
@@ -82,6 +87,12 @@ const VehicleMaster: React.FC = () => {
     {
       label: 'Rented Accessories',
       value: assetStats?.assigned?.toString() || '0',
+      icon: <FiTool className="w-6 h-6" />,
+      link: 'View List',
+    },
+    {
+      label: 'Vehicles in Maintenance',
+      value: assetStats?.maintenanceVehicles?.toString() || '0',
       icon: <FiTool className="w-6 h-6" />,
       link: 'View List',
     },
@@ -208,6 +219,17 @@ const VehicleMaster: React.FC = () => {
         );
       },
     },
+    //vehicle vendor
+    {
+      key: 'vehicleVendor',
+      title: 'Vehicle Vendor',
+      essential: true,
+      render: (value: any) => (
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-medium text-gray-900">{value?.name || '-'}</span>
+        </div>
+      )
+    },
     {
       key: 'evType',
       title: 'EV Type',
@@ -245,7 +267,7 @@ const VehicleMaster: React.FC = () => {
     {
       key: 'city',
       title: 'City',
-      essential: true,
+      essential: false,
       render: (value: any) => (
         <div className="flex items-center gap-1">
           <FiMapPin className="text-gray-400 w-3 h-3" />
@@ -519,6 +541,148 @@ const VehicleMaster: React.FC = () => {
     },
   ];
 
+  // Define collapsible columns for maintenance vehicles
+  const maintenanceCollapsibleColumns: CollapsibleColumn[] = [
+    {
+      key: 'vehicleNumber',
+      title: 'Vehicle Number',
+      essential: true,
+      render: (value, record) => (
+        <div className="flex items-center gap-2">
+          <FiTruck className="text-orange-600 w-4 h-4" />
+          <span
+            className="font-semibold text-gray-900 cursor-pointer hover:text-orange-600 hover:underline"
+            onClick={() => navigate(`/add-vehicle/${record.id}`)}
+          >
+            {value}
+          </span>
+        </div>
+      )
+    },
+    {
+      key: 'maintenanceInfo',
+      title: 'Maintenance Info',
+      essential: true,
+      render: (_value: any, record: any) => {
+        const maintenanceAssignment = record.maintenanceAssignment;
+        if (!maintenanceAssignment) {
+          return (
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900">
+                Maintenance Date: {record.maintenanceDate ? new Date(record.maintenanceDate).toLocaleDateString('en-GB') : 'N/A'}
+              </span>
+              <span className="text-xs text-gray-500">No detailed maintenance info</span>
+            </div>
+          );
+        }
+        
+        return (
+          <div className="flex flex-col">
+            <div className="text-sm font-medium text-gray-900">
+              {maintenanceAssignment.notes || 'No maintenance reason provided'}
+            </div>
+            <div className="text-xs text-gray-500">
+              Date: {maintenanceAssignment.maintenanceDate ? new Date(maintenanceAssignment.maintenanceDate).toLocaleDateString('en-GB') : 'N/A'}
+            </div>
+            {maintenanceAssignment.assignedBy && (
+              <div className="text-xs text-blue-600">
+                By: {maintenanceAssignment.assignedBy.name || 'Unknown'}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'vehicleModel',
+      title: 'Model',
+      essential: true,
+      render: (value: any) => (
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-medium text-gray-900">{value?.name || '-'}</span>
+        </div>
+      )
+    },
+    {
+      key: 'vehicleType',
+      title: 'Type',
+      essential: true,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'city',
+      title: 'City',
+      essential: true,
+      render: (value: any) => (
+        <div className="flex items-center gap-1">
+          <FiMapPin className="text-gray-400 w-3 h-3" />
+          <span>{value?.name || '-'}</span>
+        </div>
+      )
+    },
+    {
+      key: 'hub',
+      title: 'Hub',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'actions',
+      title: 'Action',
+      essential: true,
+      render: (_value: any, record: any) => (
+        <ActionDropdown
+          items={[
+            {
+              label: 'View Details',
+              onClick: () => navigate(`/add-vehicle/${record.id}`),
+            },
+            {
+              label: 'Mark Available',
+              onClick: () => {
+                // TODO: Implement mark available functionality
+                console.log('Mark vehicle available:', record.id);
+              },
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      key: 'evType',
+      title: 'EV Type',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'vehicleVendor',
+      title: 'Vendor',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+    {
+      key: 'vehicleRCNumber',
+      title: 'RC Number',
+      essential: false
+    },
+    {
+      key: 'chassisNumber',
+      title: 'Chassis Number',
+      essential: false
+    },
+    {
+      key: 'batteryNumber',
+      title: 'Battery Number',
+      essential: false
+    },
+    {
+      key: 'supervisor',
+      title: 'Supervisor',
+      essential: false,
+      render: (value: any) => value?.name || '-'
+    },
+  ];
+
   // Map vehicles to table data
   const tableData = vehicles.map((v: any) => ({
     id: v._id,
@@ -530,12 +694,32 @@ const VehicleMaster: React.FC = () => {
     evType: v.evType,
     oem: v.oem,
     vehicleModel: v.vehicleModel,
+    vehicleVendor: v.vehicleVendor,
     vehicleRCNumber: v.vehicleRCNumber,
     vehicleStatus: v.vehicleStatus,
     numberPlateStatus: v.numberPlateStatus,
     invoiceAmount: v.invoiceAmount,
     deliveryDate: v.deliveryDate,
     currentAssignment: v.currentAssignment,
+  }));
+
+  // Map maintenance vehicles to table data
+  const maintenanceTableData = maintenanceVehicles.map((v: any) => ({
+    id: v._id,
+    vehicleNumber: v.vehicleNumber,
+    city: v.city,
+    hub: v.hub,
+    supervisor: v.supervisor,
+    vehicleType: v.vehicleType,
+    evType: v.evType,
+    oem: v.oem,
+    vehicleModel: v.vehicleModel,
+    vehicleVendor: v.vehicleVendor,
+    vehicleRCNumber: v.vehicleRCNumber,
+    chassisNumber: v.chassisNumber,
+    batteryNumber: v.batteryNumber,
+    maintenanceAssignment: v.maintenanceAssignment,
+    maintenanceDate: v.maintenanceDate,
   }));
 
   // Map assets to table data
@@ -590,14 +774,22 @@ const VehicleMaster: React.FC = () => {
         </div>
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          {summaryCards.map((card) => (
-            <div key={card.label} className="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
+          {summaryCards.map((card, index) => (
+            <div 
+              key={card.label} 
+              className="bg-white rounded-xl shadow p-4 flex flex-col gap-2 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => {
+                if (card.label === 'Vehicles in Maintenance') {
+                  setActiveTab(4); // Switch to maintenance tab
+                }
+              }}
+            >
               <div className="flex items-center gap-2">
                 <div className="text-gray-600">{card.icon}</div>
                 <span className="text-lg font-semibold">{card.value}</span>
               </div>
               <div className="text-xs text-gray-500 font-medium">{card.label}</div>
-              <a href="#" className="text-xs text-[#3B36FF] font-medium hover:underline">{card.link}</a>
+              <div className="text-xs text-[#3B36FF] font-medium hover:underline">{card.link}</div>
             </div>
           ))}
         </div>
@@ -681,6 +873,40 @@ const VehicleMaster: React.FC = () => {
               page,
               limit,
               total,
+              onPageChange: setPage,
+              onLimitChange: (n) => { setPage(1); setLimit(n); },
+              pageSizeOptions: [10, 20, 50],
+            }}
+          />
+        )}
+
+        {/* Maintenance Table */}
+        {activeTab === 4 && (
+          <CollapsibleTable
+            columns={maintenanceCollapsibleColumns}
+            data={maintenanceTableData}
+            isLoading={loadingMaintenance}
+            actionButtonLabel="+ New Vehicle"
+            onActionButtonClick={() => navigate('/add-vehicle')}
+            showSearch
+            searchValue={search}
+            onSearchChange={(v) => {
+              setSearch(v);
+              if (v.trim() === '') {
+                setPage(1);
+                setSubmittedSearch('');
+              }
+            }}
+            searchButtonLabel="Search"
+            onSearchSubmit={() => { setPage(1); setSubmittedSearch(search); }}
+            searchPlaceholder="Search maintenance vehicles by number, model, type..."
+            skeletonRows={8}
+            skeletonShowStatus={true}
+            skeletonShowActions={true}
+            pagination={{
+              page,
+              limit,
+              total: maintenanceTotal,
               onPageChange: setPage,
               onLimitChange: (n) => { setPage(1); setLimit(n); },
               pageSizeOptions: [10, 20, 50],

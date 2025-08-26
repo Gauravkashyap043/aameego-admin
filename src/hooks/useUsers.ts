@@ -101,6 +101,7 @@ interface UseUsersByRoleParams {
   status?: string;
   hasDocuments?: string;
   businessPartnerId?: string;
+  assignedSupervisorId?: string;
 }
 
 export const useRidersAndSupervisors = () => {
@@ -113,9 +114,9 @@ export const useRidersAndSupervisors = () => {
   });
 };
 
-export const useUsersByRole = ({ role, page = 1, limit = 10, search = '', status, hasDocuments, businessPartnerId }: UseUsersByRoleParams) => {
+export const useUsersByRole = ({ role, page = 1, limit = 10, search = '', status, hasDocuments, businessPartnerId, assignedSupervisorId }: UseUsersByRoleParams) => {
   return useQuery<PaginatedUsersResponse>({
-    queryKey: ['users', 'by-role', role, page, limit, search, status, hasDocuments, businessPartnerId],
+    queryKey: ['users', 'by-role', role, page, limit, search, status, hasDocuments, businessPartnerId, assignedSupervisorId],
     queryFn: async () => {
       const params = new URLSearchParams({
         role,
@@ -137,6 +138,10 @@ export const useUsersByRole = ({ role, page = 1, limit = 10, search = '', status
 
       if (businessPartnerId && businessPartnerId.trim()) {
         params.append('businessPartnerId', businessPartnerId.trim());
+      }
+
+      if (assignedSupervisorId && assignedSupervisorId.trim()) {
+        params.append('assignedSupervisorId', assignedSupervisorId.trim());
       }
 
       const response = await api.get(`/user/users?${params.toString()}`);

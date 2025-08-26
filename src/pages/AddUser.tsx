@@ -24,12 +24,14 @@ import { useUpdateVehicleStatus } from "../hooks/useVehicleAssignment";
 import VehicleStatusModal from "../components/VehicleStatusModal";
 import { useUnassignRiderByProfileCode, useUsersByRole } from "../hooks/useUsers";
 import VehicalDetails from "../components/tabs/VehicalDetails";
+import AssetDetails from "../components/tabs/AssetDetails";
 
 const TABS = [
   "Personal information",
   "Bank Details",
   "Documents",
   "Vehicle Details",
+  "Asset Details",
 ];
 
 const AddUser: React.FC = () => {
@@ -138,6 +140,7 @@ const AddUser: React.FC = () => {
     bank: false,
     vehicle: false,
     documents: false,
+    assets: false,
   });
 
   // Helper function to normalize file for FormData
@@ -849,9 +852,11 @@ const AddUser: React.FC = () => {
       case 1:
         return hasChanges.bank;
       case 2:
-        return hasChanges.vehicle;
-      case 3:
         return hasChanges.documents;
+      case 3:
+        return hasChanges.vehicle;
+      case 5:
+        return hasChanges.assets;
       default:
         return false;
     }
@@ -1981,10 +1986,9 @@ const AddUser: React.FC = () => {
                 </div>
               )}
 
-              {activeTab === 3 &&  <VehicalDetails userId = {userId}/>}
-              
+              {activeTab === 3 && <VehicalDetails userId={userId} />}
 
-              {activeTab === 4 && (
+              {activeTab === 5 && (
                 <div>
                   <div className="mb-4 md:mb-6 xl:mb-8 flex justify-between items-start">
                     <div>
@@ -1996,6 +2000,24 @@ const AddUser: React.FC = () => {
                           ? "Manage the riders assigned to this supervisor"
                           : "View the supervisor assigned to this rider"}
                       </p>
+                      {role === "SUPERVISOR" && (
+                        <div className="mt-2 flex items-center gap-4">
+                          <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-blue-700">
+                              Total Riders: {assignedUser?.length || 0}
+                            </span>
+                          </div>
+                          {assignedUser?.length > 0 && (
+                            <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-green-700">
+                                Verified: {assignedUser.filter((item: any) => item.rider?.status === 'verified').length}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {role === "SUPERVISOR" && (
                       <Button
@@ -2130,12 +2152,12 @@ const AddUser: React.FC = () => {
                                         </span>
                                       </div>
 
-                                      <div className="flex items-center gap-2">
+                                      {/* <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 bg-orange-400 rounded-full"></div>
                                         <span className="text-sm xl:text-base text-gray-600">
                                           <span className="font-medium">Assigned:</span> {item.assignedAt ? new Date(item.assignedAt).toLocaleDateString() : 'N/A'}
                                         </span>
-                                      </div>
+                                      </div> */}
                                     </div>
 
                                     {/* Assignment Time */}
@@ -2210,6 +2232,9 @@ const AddUser: React.FC = () => {
                   )}
                 </div>
               )}
+
+              {activeTab === 4 && <AssetDetails userId={userId} />}
+
             </>
             {/* )} */}
           </div>

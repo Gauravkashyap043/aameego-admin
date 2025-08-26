@@ -24,7 +24,7 @@ const TABS = [
 const UserManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState("supervisor");
   const navigate = useNavigate();
-  
+
   // Pagination and search state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -33,6 +33,7 @@ const UserManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("All");
   const [hasDocumentsFilter, setHasDocumentsFilter] = useState("all");
   const [businessPartnerFilter, setBusinessPartnerFilter] = useState("all");
+  const [assignedSupervisorFilter, setAssignedSupervisorFilter] = useState("all");
 
   // Assignment modal state
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -58,6 +59,13 @@ const UserManagement: React.FC = () => {
   const [convertRoleError, setConvertRoleError] = useState("");
   const [convertRoleSuccess, setConvertRoleSuccess] = useState("");
 
+  // Deactivate user modal state
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [selectedUserForDeactivation, setSelectedUserForDeactivation] = useState<any>(null);
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+  const [deactivateError, setDeactivateError] = useState("");
+  const [deactivateSuccess, setDeactivateSuccess] = useState("");
+
   // Use new paginated API
   const { data: paginatedData, isLoading, error, refetch } = useUsersByRole({
     role: activeTab as 'rider' | 'supervisor',
@@ -67,11 +75,12 @@ const UserManagement: React.FC = () => {
     status: statusFilter,
     hasDocuments: hasDocumentsFilter,
     businessPartnerId: businessPartnerFilter !== "all" ? businessPartnerFilter : undefined,
+    assignedSupervisorId: assignedSupervisorFilter !== "all" ? assignedSupervisorFilter : undefined,
   });
 
   // Keep old API for supervisor options in assign modal and tab counts
   const { data: allUsersData } = useRidersAndSupervisors();
-  
+
   // Fetch business partners for filter
   const { data: businessPartnersData } = useFetchBusinessPartners();
 
@@ -93,6 +102,7 @@ const UserManagement: React.FC = () => {
     setStatusFilter("All");
     setHasDocumentsFilter("all");
     setBusinessPartnerFilter("all");
+    setAssignedSupervisorFilter("all");
   }, [activeTab]);
 
   useEffect(() => {
@@ -105,8 +115,11 @@ const UserManagement: React.FC = () => {
     navigate(`/add-user/${id}`);
   };
 
-  const handleDeactivate = (id: string) => {
-    alert("Deactivate user: " + id);
+  const handleDeactivate = (user: any) => {
+    setSelectedUserForDeactivation(user);
+    setShowDeactivateModal(true);
+    setDeactivateError("");
+    setDeactivateSuccess("");
   };
 
   const handleProfilePictureClick = (profilePicture: string, userName: string) => {
@@ -160,7 +173,7 @@ const UserManagement: React.FC = () => {
       console.error("Error assigning rider:", error);
       setAssignError(
         error.response?.data?.message ||
-          "Failed to assign rider. Please try again."
+        "Failed to assign rider. Please try again."
       );
     } finally {
       setAssignLoading(false);
@@ -193,7 +206,7 @@ const UserManagement: React.FC = () => {
       });
 
       setConvertRoleSuccess("Role converted successfully!");
-      
+
       // Refetch data to show updated user list
       refetch();
 
@@ -207,10 +220,45 @@ const UserManagement: React.FC = () => {
       console.error("Error converting role:", error);
       setConvertRoleError(
         error.response?.data?.message ||
-          "Failed to convert role. Please try again."
+        "Failed to convert role. Please try again."
       );
     } finally {
       setConvertRoleLoading(false);
+    }
+  };
+
+  const handleConfirmDeactivate = async () => {
+    if (!selectedUserForDeactivation) return;
+
+    setDeactivateLoading(true);
+    setDeactivateError("");
+    setDeactivateSuccess("");
+
+    try {
+      // Call the API to deactivate user
+      await api.put(`/user/${selectedUserForDeactivation._id}/status`, {
+        status: 'deactived'
+      });
+
+      setDeactivateSuccess("User deactivated successfully!");
+
+      // Refetch data to show updated user list
+      refetch();
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowDeactivateModal(false);
+        setSelectedUserForDeactivation(null);
+        setDeactivateSuccess("");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error deactivating user:", error);
+      setDeactivateError(
+        error.response?.data?.message ||
+        "Failed to deactivate user. Please try again."
+      );
+    } finally {
+      setDeactivateLoading(false);
     }
   };
 
@@ -247,7 +295,7 @@ const UserManagement: React.FC = () => {
               title="Click to view profile picture"
             />
           ) : (
-            <div 
+            <div
               className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all"
               onClick={() => handleProfilePictureClick("", value)}
               title="No profile picture available"
@@ -273,7 +321,7 @@ const UserManagement: React.FC = () => {
       essential: true,
       render: (_value, record) => {
         const status = record.status;
-        
+
         const getStatusStyles = (status: string) => {
           switch (status?.toLowerCase()) {
             case "verified":
@@ -374,7 +422,7 @@ const UserManagement: React.FC = () => {
 
           actionItems.push({
             label: "Deactivate User",
-            onClick: () => handleDeactivate(record.id),
+            onClick: () => handleDeactivate(record),
           });
 
           return <ActionDropdown items={actionItems} />;
@@ -383,6 +431,37 @@ const UserManagement: React.FC = () => {
     ] : []),
     // Additional fields for riders only
     ...(activeTab === "rider" ? [
+      {
+        key: "currentVehicle",
+        title: "Current Vehicle",
+        essential: true,
+        render: (_value: any, record: any) => {
+          const vehicleAssignment = record.currentVehicleAssignment;
+          if (!vehicleAssignment || !vehicleAssignment.vehicle) {
+            return (
+              <span className="text-gray-400 italic">No vehicle assigned</span>
+            );
+          }
+          const vehicle = vehicleAssignment.vehicle;
+          return (
+            <div className="flex flex-col">
+              <div className="font-medium text-gray-900">
+                {vehicle.vehicleNumber || 'N/A'}   {vehicle.evType?.name && ` • ${vehicle.evType.name}`}
+              </div>
+              <div className="text-sm text-gray-500">
+                {vehicle.vehicleModel?.name || 'N/A'} • {vehicle.vehicleType?.name || 'N/A'}
+                {/* {vehicle.evType?.name && ` • ${vehicle.evType.name}`} */}
+              </div>
+              <div className="text-xs text-gray-400">
+                {vehicle.hub?.name || 'N/A'} • {vehicle.city?.name || 'N/A'}
+              </div>
+              <div className="text-xs text-blue-600">
+                Assigned: {new Date(vehicleAssignment.assignmentDate).toLocaleDateString('en-GB')}
+              </div>
+            </div>
+          );
+        },
+      },
       {
         key: "assignedSupervisor",
         title: "Assigned Supervisor",
@@ -425,48 +504,19 @@ const UserManagement: React.FC = () => {
               <div className="font-medium text-gray-900">
                 {businessPartner.name || 'N/A'}
               </div>
-              <div className="text-sm text-gray-500">
+              {/* <div className="text-sm text-gray-500">
                 {businessPartner.type} • {businessPartner.code}
               </div>
               {businessPartner.commissionRate > 0 && (
                 <div className="text-xs text-blue-600">
                   Commission: {businessPartner.commissionRate}%
                 </div>
-              )}
+              )} */}
             </div>
           );
         },
       },
-      {
-        key: "currentVehicle",
-        title: "Current Vehicle",
-        essential: false,
-        render: (_value: any, record: any) => {
-          const vehicleAssignment = record.currentVehicleAssignment;
-          if (!vehicleAssignment || !vehicleAssignment.vehicle) {
-            return (
-              <span className="text-gray-400 italic">No vehicle assigned</span>
-            );
-          }
-          const vehicle = vehicleAssignment.vehicle;
-          return (
-            <div className="flex flex-col">
-              <div className="font-medium text-gray-900">
-                {vehicle.vehicleNumber || 'N/A'}
-              </div>
-              <div className="text-sm text-gray-500">
-                {vehicle.vehicleModel?.name || 'N/A'} • {vehicle.vehicleType?.name || 'N/A'}
-              </div>
-              <div className="text-xs text-gray-400">
-                {vehicle.hub?.name || 'N/A'} • {vehicle.city?.name || 'N/A'}
-              </div>
-              <div className="text-xs text-blue-600">
-                Assigned: {new Date(vehicleAssignment.assignmentDate).toLocaleDateString('en-GB')}
-              </div>
-            </div>
-          );
-        },
-      },
+
       {
         key: "aadharNumber",
         title: "Aadhar Number",
@@ -541,7 +591,7 @@ const UserManagement: React.FC = () => {
 
           actionItems.push({
             label: "Deactivate User",
-            onClick: () => handleDeactivate(record.id),
+            onClick: () => handleDeactivate(record),
           });
 
           return <ActionDropdown items={actionItems} />;
@@ -552,16 +602,16 @@ const UserManagement: React.FC = () => {
 
   return (
     <Layout>
-      <div className="p-8">
-        <div className="flex gap-4 mb-6">
+      <div className="p-4 sm:p-6 lg:p-8">
+        {/* Responsive Tab Navigation */}
+        <div className="flex flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-6">
           {TABS.map((tab) => (
             <button
               key={tab.value}
-              className={`px-6 py-2 rounded-t-lg font-semibold focus:outline-none transition-colors border-b-2 ${
-                activeTab === tab.value
-                  ? "bg-white border-indigo-600 text-indigo-700"
-                  : "bg-indigo-100 border-transparent text-indigo-400 hover:text-indigo-600"
-              }`}
+              className={`px-3 sm:px-6 py-2 rounded-t-lg font-semibold focus:outline-none transition-colors border-b-2 text-sm sm:text-base ${activeTab === tab.value
+                ? "bg-white border-indigo-600 text-indigo-700"
+                : "bg-indigo-100 border-transparent text-indigo-400 hover:text-indigo-600"
+                }`}
               onClick={() => handleToggleTab(tab.value)}
               type="button"
             >
@@ -579,88 +629,115 @@ const UserManagement: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Filters */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Status:</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                >
-                  <option value="All">All</option>
-                  <option value="verified">Verified</option>
-                  <option value="pending">Pending</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="deactived">Deactivated</option>
-                </select>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">Documents:</label>
-                <select
-                  value={hasDocumentsFilter}
-                  onChange={(e) => {
-                    setHasDocumentsFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                >
-                  <option value="all">All Users</option>
-                  <option value="true">With Documents</option>
-                  <option value="false">Without Documents</option>
-                </select>
-              </div>
-
-              {/* Business Partner Filter - Only show for riders */}
-              {activeTab === "rider" && (
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-gray-700">Business Partner:</label>
+            {/* Responsive Filters */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Status Filter */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-700 uppercase tracking-wider">Status</label>
                   <select
-                    value={businessPartnerFilter}
+                    value={statusFilter}
                     onChange={(e) => {
-                      setBusinessPartnerFilter(e.target.value);
+                      setStatusFilter(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-white"
                   >
-                    <option value="all">All Business Partners</option>
-                    {businessPartnersData?.data?.map((partner) => (
-                      <option key={partner._id} value={partner._id}>
-                        {partner.name} ({partner.type})
-                      </option>
-                    ))}
+                    <option value="All">All</option>
+                    <option value="verified">Verified</option>
+                    <option value="pending">Pending</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="deactived">Deactivated</option>
                   </select>
                 </div>
-              )}
+
+                {/* Documents Filter */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-700 uppercase tracking-wider">Documents</label>
+                  <select
+                    value={hasDocumentsFilter}
+                    onChange={(e) => {
+                      setHasDocumentsFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-white"
+                  >
+                    <option value="all">All Users</option>
+                    <option value="true">With Documents</option>
+                    <option value="false">Without Documents</option>
+                  </select>
+                </div>
+
+                {/* Business Partner Filter - Only show for riders */}
+                {activeTab === "rider" && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-700 uppercase tracking-wider">Business Partner</label>
+                    <select
+                      value={businessPartnerFilter}
+                      onChange={(e) => {
+                        setBusinessPartnerFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-white"
+                    >
+                      <option value="all">All Business Partners</option>
+                      {businessPartnersData?.data?.map((partner) => (
+                        <option key={partner._id} value={partner._id}>
+                          {partner.name} ({partner.type})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Assigned Supervisor Filter - Only show for riders */}
+                {activeTab === "rider" && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-700 uppercase tracking-wider">Supervisor</label>
+                    <select
+                      value={assignedSupervisorFilter}
+                      onChange={(e) => {
+                        setAssignedSupervisorFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-white"
+                    >
+                      <option value="all">All Supervisors</option>
+                      <option value="unassigned">Unassigned Riders</option>
+                      {allUsersData?.supervisors?.map((supervisor) => (
+                        <option key={supervisor._id} value={supervisor._id}>
+                          {supervisor.name || 'N/A'} ({supervisor.profileCode})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
-            
+
             <CollapsibleTable
-            columns={collapsibleColumns}
-            data={paginatedData?.users.map(user => ({ ...user, id: user._id })) || []}
-            isLoading={isLoading}
-            actionButtonLabel="Assign Supervisor"
-            onActionButtonClick={() => setShowAssignModal(true)}
-            showSearch={true}
-            searchPlaceholder={activeTab === "supervisor" ? "Search supervisors by name, profile code, or phone" : "Search riders by name, profile code, or phone"}
-            searchValue={searchTerm}
-            onSearchChange={setSearchTerm}
-            searchButtonLabel="Search"
-            onSearchSubmit={() => {
-              setCurrentPage(1);
-              setDebouncedSearch(searchTerm);
-            }}
-            pagination={{
-              page: currentPage,
-              limit: pageSize,
-              total: paginatedData?.pagination?.totalCount || 0,
-              onPageChange: setCurrentPage,
-              onLimitChange: setPageSize,
-              pageSizeOptions: [5, 10, 20, 50]
-            }}
+              columns={collapsibleColumns}
+              data={paginatedData?.users.map(user => ({ ...user, id: user._id })) || []}
+              isLoading={isLoading}
+              actionButtonLabel="Assign Supervisor"
+              onActionButtonClick={() => setShowAssignModal(true)}
+              showSearch={true}
+              searchPlaceholder={activeTab === "supervisor" ? "Search supervisors by name, profile code, or phone" : "Search riders by name, profile code, or phone"}
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              searchButtonLabel="Search"
+              onSearchSubmit={() => {
+                setCurrentPage(1);
+                setDebouncedSearch(searchTerm);
+              }}
+              pagination={{
+                page: currentPage,
+                limit: pageSize,
+                total: paginatedData?.pagination?.totalCount || 0,
+                onPageChange: setCurrentPage,
+                onLimitChange: setPageSize,
+                pageSizeOptions: [5, 10, 20, 50]
+              }}
             />
           </div>
         )}
@@ -785,7 +862,7 @@ const UserManagement: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-2">User Details:</h4>
                   <div className="space-y-2 text-sm text-gray-600">
@@ -830,6 +907,99 @@ const UserManagement: React.FC = () => {
                 disabled={convertRoleLoading}
               >
                 {convertRoleLoading ? "Converting..." : "Convert to Rider"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Deactivate User Modal */}
+        <Modal
+          open={showDeactivateModal}
+          onClose={() => {
+            setShowDeactivateModal(false);
+            setSelectedUserForDeactivation(null);
+            setDeactivateError("");
+            setDeactivateSuccess("");
+          }}
+          title="Deactivate User"
+        >
+          <div className="p-6">
+            {selectedUserForDeactivation && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Confirm User Deactivation
+                </h3>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">
+                        Warning: User Deactivation
+                      </h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <p>Deactivating a user will:</p>
+                        <ul className="list-disc list-inside mt-1 space-y-1">
+                          <li>Change their status to "deactivated"</li>
+                          <li>Remove their access to the system</li>
+                          <li>Keep their data for record purposes</li>
+                          <li>This action can be reversed by reactivating the user</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">User Details:</h4>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div><span className="font-medium">Name:</span> {selectedUserForDeactivation.name || 'N/A'}</div>
+                    <div><span className="font-medium">Profile Code:</span> {selectedUserForDeactivation.profileCode}</div>
+                    <div><span className="font-medium">Phone:</span> {selectedUserForDeactivation.authRef?.identifier || 'N/A'}</div>
+                    <div><span className="font-medium">Current Role:</span> {selectedUserForDeactivation.role?.roleName || 'N/A'}</div>
+                    <div><span className="font-medium">Current Status:</span> {selectedUserForDeactivation.status || 'N/A'}</div>
+                    {selectedUserForDeactivation.currentVehicleAssignment && (
+                      <div><span className="font-medium">Current Vehicle:</span> {selectedUserForDeactivation.currentVehicleAssignment.vehicle?.vehicleNumber || 'N/A'}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {deactivateError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="text-sm text-red-600">{deactivateError}</div>
+              </div>
+            )}
+
+            {deactivateSuccess && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-sm text-green-600">{deactivateSuccess}</div>
+              </div>
+            )}
+
+            <div className="flex space-x-3 justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowDeactivateModal(false);
+                  setSelectedUserForDeactivation(null);
+                  setDeactivateError("");
+                  setDeactivateSuccess("");
+                }}
+                disabled={deactivateLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleConfirmDeactivate}
+                disabled={deactivateLoading}
+              >
+                {deactivateLoading ? "Deactivating..." : "Deactivate User"}
               </Button>
             </div>
           </div>

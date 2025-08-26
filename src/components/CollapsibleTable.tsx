@@ -2,6 +2,19 @@ import React, { useState } from 'react';
 import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import TableSkeleton from './TableSkeleton';
 
+// CSS for search input placeholder
+const searchInputStyles = `
+  .search-input::placeholder {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .search-input:focus::placeholder {
+    color: #9CA3AF;
+  }
+`;
+
 export type CollapsibleColumn = {
   key: string;
   title: string;
@@ -125,12 +138,14 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
   // Remove the early return for loading state to keep search and buttons visible
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border-b border-gray-200">
-        <div className="flex items-center gap-3">
+    <>
+      <style>{searchInputStyles}</style>
+      <div className="bg-white rounded-lg shadow">
+      {/* Responsive Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {showSearch && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
               <input
                 type="text"
                 placeholder={searchPlaceholder}
@@ -142,12 +157,15 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
                     onSearchSubmit();
                   }
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full sm:w-80 lg:w-96 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm placeholder-gray-400 search-input"
+                style={{
+                  minWidth: '280px'
+                }}
               />
               {onSearchSubmit && (
                 <button
                   onClick={onSearchSubmit}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors text-sm"
                 >
                   {searchButtonLabel || 'Search'}
                 </button>
@@ -159,14 +177,14 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
         {actionButtonLabel && (
           <button
             onClick={onActionButtonClick}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors text-sm"
           >
             {actionButtonLabel}
           </button>
         )}
       </div>
 
-      {/* Table */}
+      {/* Responsive Table */}
       <div className="overflow-x-auto min-h-[400px]">
         {isLoading ? (
           <TableSkeleton
@@ -180,14 +198,15 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
           <table className="min-w-full divide-y divide-gray-200 min-h-[350px]">
             <thead className="bg-gray-50">
               <tr>
-                <th className="w-8 px-6 py-3"></th>
+                <th className="w-8 px-3 sm:px-6 py-3"></th>
                 {essentialColumns.map((column) => (
                   <th
                     key={column.key}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                     style={column.width ? { width: column.width } : undefined}
                   >
-                    {column.title}
+                    <span className="hidden sm:inline">{column.title}</span>
+                    <span className="sm:hidden">{column.title.length > 8 ? column.title.substring(0, 8) + '...' : column.title}</span>
                   </th>
                 ))}
               </tr>
@@ -197,7 +216,7 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
                 <tr>
                   <td 
                     colSpan={essentialColumns.length + 1} 
-                    className="px-6 py-12 text-center text-gray-500"
+                    className="px-3 sm:px-6 py-12 text-center text-gray-500"
                   >
                     <div className="min-h-[300px] flex items-center justify-center">
                       {emptyMessage}
@@ -209,7 +228,7 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
                   <React.Fragment key={row.id}>
                     {/* Main Row */}
                     <tr className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-6 py-4">
                         <button
                           onClick={() => toggleRowExpansion(row.id)}
                           className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -224,10 +243,12 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
                       {essentialColumns.map((column) => (
                         <td
                           key={column.key}
-                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer"
+                          className="px-3 sm:px-6 py-4 text-sm text-gray-900 cursor-pointer"
                           onClick={() => onRowClick && onRowClick(row)}
                         >
-                          {column.render ? column.render(row[column.key], row) : row[column.key]}
+                          <div className="min-w-0">
+                            {column.render ? column.render(row[column.key], row) : row[column.key]}
+                          </div>
                         </td>
                       ))}
                     </tr>
@@ -236,15 +257,15 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
                     {isRowExpanded(row.id) && additionalColumns.length > 0 && (
                       <tr className="bg-gray-50">
                         <td></td>
-                        <td colSpan={essentialColumns.length} className="px-6 py-4">
-                          <div className="bg-white rounded-lg border border-gray-200 p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <td colSpan={essentialColumns.length} className="px-3 sm:px-6 py-4">
+                          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                               {additionalColumns.map((column) => (
                                 <div key={column.key} className="flex flex-col">
                                   <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
                                     {column.title}
                                   </dt>
-                                  <dd className="text-sm text-gray-900">
+                                  <dd className="text-sm text-gray-900 break-words">
                                     {column.render ? column.render(row[column.key], row) : row[column.key] || '-'}
                                   </dd>
                                 </div>
@@ -271,15 +292,15 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
         )}
       </div>
 
-      {/* Pagination */}
+      {/* Responsive Pagination */}
       {pagination && (
-        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center text-sm text-gray-700">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-3 sm:px-6 py-3 border-t border-gray-200 bg-gray-50 gap-3">
+          <div className="flex items-center text-xs sm:text-sm text-gray-700">
             Showing {showingStart} to {showingEnd} of {pagination.total} results
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:space-x-2">
             <select
-              className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border border-gray-300 rounded-md px-2 sm:px-3 py-1 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
               value={currentLimit}
               onChange={(e) => pagination.onLimitChange && pagination.onLimitChange(parseInt(e.target.value, 10))}
               disabled={isLoading}
@@ -291,22 +312,23 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
             
             <nav className="flex items-center space-x-1">
               <button
-                className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 sm:px-3 py-1 rounded-md border border-gray-300 text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={currentPage <= 1 || isLoading}
                 onClick={() => pagination.onPageChange(Math.max(1, currentPage - 1))}
               >
-                Previous
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
               </button>
               
               {getPaginationItems().map((item, idx) =>
                 item === 'ellipsis' ? (
-                  <span key={`ellipsis-${idx}`} className="px-3 py-1 text-sm text-gray-500">
+                  <span key={`ellipsis-${idx}`} className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-gray-500">
                     ...
                   </span>
                 ) : (
                   <button
                     key={item}
-                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium ${
                       item === currentPage
                         ? 'bg-indigo-600 text-white'
                         : 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
@@ -320,17 +342,19 @@ const CollapsibleTable: React.FC<CollapsibleTableProps> = ({
               )}
               
               <button
-                className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-2 sm:px-3 py-1 rounded-md border border-gray-300 text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={currentPage >= totalPages || isLoading}
                 onClick={() => pagination.onPageChange(Math.min(totalPages, currentPage + 1))}
               >
-                Next
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">Next</span>
               </button>
             </nav>
           </div>
         </div>
       )}
     </div>
+    </>
   );
 };
 

@@ -10,10 +10,6 @@ interface Asset {
     _id: string;
     name: string;
   };
-  vehicle: {
-    _id: string;
-    vehicleNumber: string;
-  };
   status: 'available' | 'assigned' | 'damaged' | 'lost' | 'maintenance';
   condition: 'new' | 'good' | 'fair' | 'poor';
   ownership: 'owned' | 'rented';
@@ -183,9 +179,7 @@ const AssetsTable: React.FC<AssetsTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Asset
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vehicle
-              </th>
+              {/* Removed Vehicle column as vehicle field is no longer part of assets */}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
@@ -223,11 +217,7 @@ const AssetsTable: React.FC<AssetsTableProps> = ({
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
-                    {asset.vehicle?.vehicleNumber || 'N/A'}
-                  </div>
-                </td>
+                {/* Removed Vehicle cell as vehicle field is no longer part of assets */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(asset.status)}`}>
                     <span className={`w-2 h-2 rounded-full mr-2 ${getStatusDot(asset.status)}`}></span>

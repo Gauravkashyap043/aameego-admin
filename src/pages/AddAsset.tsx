@@ -11,11 +11,10 @@ import {
     useCreateVehicleAsset,
     useUpdateVehicleAsset
 } from '../hooks/useVehicleAssets';
-import { useVehicleList } from '../hooks/useVehicles';
+// Removed vehicle import as vehicle field is no longer part of assets
 // import { useUsersByRole } from '../hooks/useUsers';
 
 interface AssetFormData {
-    vehicle: string;
     vehicleAssignment?: string;
     assetType: string;
     assetVendor?: string;
@@ -35,7 +34,6 @@ const AddAsset: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
 
     const [formData, setFormData] = useState<AssetFormData>({
-        vehicle: '',
         vehicleAssignment: '',
         assetType: '',
         assetVendor: '',
@@ -52,7 +50,6 @@ const AddAsset: React.FC = () => {
 
 
     // Real data from API hooks
-    const { data: vehiclesData } = useVehicleList(1, 1000); // Get all vehicles
     const { data: assetTypesData } = useAssetTypes();
     const { data: assetVendorsData } = useAssetVendors();
     // const { data: usersData } = useUsersByRole({ role: 'rider', limit: 1000 }); // Get all riders
@@ -73,7 +70,6 @@ const AddAsset: React.FC = () => {
     useEffect(() => {
         if (assetData && isEditing) {
             setFormData({
-                vehicle: assetData.vehicle?._id || '',
                 vehicleAssignment: assetData.vehicleAssignment?._id || '',
                 assetType: assetData.assetType?._id || '',
                 assetVendor: assetData.assetVendor?._id || '',
@@ -190,11 +186,7 @@ const AddAsset: React.FC = () => {
         navigate('/vehicle-master');
     };
 
-    // Convert vehicles data to SearchableSelect format
-    const vehicleOptions = vehiclesData?.items?.map((vehicle: any) => ({
-        label: vehicle.vehicleNumber,
-        value: vehicle._id
-    })) || [];
+    // Removed vehicle options as vehicle field is no longer part of assets
 
     if (isLoading && isEditing) {
         return (
@@ -236,16 +228,6 @@ const AddAsset: React.FC = () => {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Basic Information */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <SearchableSelect
-                                    label="Vehicle"
-                                    value={formData.vehicle}
-                                    onChange={(value) => handleInputChange('vehicle', value)}
-                                    options={vehicleOptions}
-                                    placeholder="Select Vehicle (Optional)"
-                                />
-                            </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Asset Type <span className="text-red-500">*</span>

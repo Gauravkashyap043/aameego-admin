@@ -142,17 +142,7 @@ export const useReturnAsset = () => {
   });
 };
 
-// Hook to get assets by vehicle
-export const useAssetsByVehicle = (vehicleId: string) => {
-  return useQuery({
-    queryKey: ['assetsByVehicle', vehicleId],
-    queryFn: async () => {
-      const res = await api.get(`/vehicle-asset/vehicle/${vehicleId}`);
-      return res.data.data;
-    },
-    enabled: !!vehicleId,
-  });
-};
+// Removed useAssetsByVehicle hook as vehicle field is no longer part of assets
 
 // Hook to get assets by user
 export const useAssetsByUser = (userId: string) => {

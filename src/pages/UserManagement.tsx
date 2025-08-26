@@ -712,6 +712,7 @@ const UserManagement: React.FC = () => {
             </div>
           </div>
         </Modal>
+        
       </div>
     </Layout>
   );

@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import ActionDropdown from '../components/ActionDropdown';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleList, useAllVehicles, useMaintenanceVehicles, type VehiclePage } from '../hooks/useVehicles';
-import { useVehicleAssetList, useAssetStatistics, type VehicleAssetPage } from '../hooks/useVehicleAssets';
+import { useAssetList, useAssetStatistics, type AssetPage } from '../hooks/useAssets';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import BulkQRCodeGenerator from '../components/BulkQRCodeGenerator';
 import { FiTruck, FiFileText, FiPackage, FiTool, FiAlertTriangle, FiUser, FiMapPin, FiCode, FiLoader } from 'react-icons/fi';
@@ -55,11 +55,11 @@ const VehicleMaster: React.FC = () => {
   });
 
   // Assets data
-  const { data: assetsPage, isLoading: loadingAssets } = useVehicleAssetList(page, limit, {
+  const { data: assetsPage, isLoading: loadingAssets } = useAssetList(page, limit, {
     status: activeTab === 3 ? 'assigned' : undefined, // "Accessories Rented" tab
   });
-  const assets = (assetsPage as VehicleAssetPage | undefined)?.items ?? [];
-  const assetsTotal = (assetsPage as VehicleAssetPage | undefined)?.total ?? 0;
+  const assets = (assetsPage as AssetPage | undefined)?.items ?? [];
+  const assetsTotal = (assetsPage as AssetPage | undefined)?.total ?? 0;
 
   // Asset statistics
   const { data: assetStats } = useAssetStatistics();
@@ -504,23 +504,7 @@ const VehicleMaster: React.FC = () => {
       },
     },
 
-    {
-      key: 'assignedTo',
-      title: 'Assigned To',
-      essential: false,
-      render: (value: any) => {
-        if (!value) return <span className="text-gray-400">Not Assigned</span>;
-        return (
-          <div className="flex items-center gap-2">
-            <FiUser className="text-blue-600 w-4 h-4" />
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-900">{value.name || 'Unknown'}</span>
-              <span className="text-xs text-gray-500">{value.authRef?.identifier || 'No Phone'}</span>
-            </div>
-          </div>
-        );
-      }
-    },
+
     {
       key: 'notes',
       title: 'Notes',
@@ -733,7 +717,6 @@ const VehicleMaster: React.FC = () => {
     serialNumber: asset.serialNumber,
     ownership: asset.ownership,
     image: asset.image,
-    assignedTo: asset.assignedTo,
     notes: asset.notes,
     addedBy: asset.addedBy,
     createdAt: asset.createdAt,
@@ -774,7 +757,7 @@ const VehicleMaster: React.FC = () => {
         </div>
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          {summaryCards.map((card, index) => (
+          {summaryCards.map((card) => (
             <div 
               key={card.label} 
               className="bg-white rounded-xl shadow p-4 flex flex-col gap-2 cursor-pointer hover:shadow-lg transition-shadow"

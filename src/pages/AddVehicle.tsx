@@ -22,11 +22,15 @@ import { formatDateForInput, formatDateForBackend } from '../utils/dateUtils';
 import api from '../services/api';
 import { Link, useParams } from 'react-router-dom';
 import QRCodeGenerator from '../components/QRCodeGenerator';
+import VehicleHistory from '../components/VehicleHistory';
+import VehicleStatusUpdate from '../components/VehicleStatusUpdate';
+import { useVehicleAssignments } from '../hooks/useVehicleAssignments';
 
 const vehicleTabs = [
   'Vehicle Details',
   'Vehicle Insurance & Documents',
-  'QR Code'
+  'QR Code',
+  'Vehicle History'
 ];
 
 
@@ -129,6 +133,12 @@ const AddVehicle: React.FC = () => {
   const updateInsuranceMutation = useUpdateInsurance();
   // const navigate = useNavigate();
   const { id } = useParams();
+  const assignmentsQuery = useVehicleAssignments(vehicleId || id);
+  const assignments = assignmentsQuery.data || [];
+  const assignmentsLoading = assignmentsQuery.isLoading;
+
+  // Get current vehicle status from form or fetched data
+  const [currentVehicleStatus, setCurrentVehicleStatus] = useState<string>('available');
 
   // Prefill logic for edit/view
   React.useEffect(() => {
@@ -166,6 +176,7 @@ const AddVehicle: React.FC = () => {
             vehicleVendor: data.vehicleVendor?._id || '',
             deliveryDate: formatDateForInput(data.deliveryDate || ''),
           });
+          setCurrentVehicleStatus(data.vehicleStatus || 'available');
           if (data.insurance) {
             setInsuranceForm({
               insuranceNumber: data.insurance.insuranceNumber || '',
@@ -221,13 +232,13 @@ const AddVehicle: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Frontend validation
     if (!form.vehicleNumber?.trim()) {
       toast.error('Vehicle Number is required');
       return;
     }
-    
+
     try {
       // Convert dates to proper Date objects for backend
       const formData = {
@@ -299,11 +310,11 @@ const AddVehicle: React.FC = () => {
       const formData = new FormData();
       formData.append('vehicle', vehicleId);
       formData.append('insuranceNumber', insuranceForm.insuranceNumber);
-      
+
       // Convert date to string for FormData
       const validTillDate = insuranceForm.validTill ? formatDateForBackend(insuranceForm.validTill) : '';
       formData.append('validTill', typeof validTillDate === 'string' ? validTillDate : validTillDate.toISOString());
-      
+
       formData.append('provider', insuranceForm.provider);
       formData.append('type', insuranceForm.type);
       if (insuranceForm.rcDocumentNumber) formData.append('rcDocumentNumber', insuranceForm.rcDocumentNumber);
@@ -507,6 +518,41 @@ const AddVehicle: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+        {activeTab === 3 && (
+          <div className="bg-white rounded-xl shadow p-8">
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Vehicle Assignment History</h3>
+              <p className="text-gray-600">
+                {form.vehicleNumber ? `Showing assignment history for vehicle: ${form.vehicleNumber}` : 'Vehicle assignment history will be displayed here'}
+              </p>
+            </div>
+             {/* Vehicle Status Update Section */}
+             {(vehicleId || id) && (
+              <VehicleStatusUpdate
+                vehicleId={vehicleId || id!}
+                currentStatus={currentVehicleStatus}
+                onStatusUpdated={() => {
+                  // Refetch assignments and vehicle data
+                  assignmentsQuery.refetch();
+                  // Update local status
+                  if (id) {
+                    api.get(`/vehicle/${id}`)
+                      .then(res => {
+                        const data = res.data.data;
+                        setCurrentVehicleStatus(data.vehicleStatus || 'available');
+                      })
+                      .catch(() => {});
+                  }
+                }}
+              />
+            )}
+            <VehicleHistory
+              assignments={assignments}
+              isLoading={assignmentsLoading}
+              vehicleNumber={form.vehicleNumber}
+            />
           </div>
         )}
       </div>

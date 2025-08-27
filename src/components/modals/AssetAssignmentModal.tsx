@@ -2,27 +2,29 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../Modal';
 import Button from '../Button';
 import { useAssignAsset } from '../../hooks/useAssetAssignment';
-import { useUsersByRole } from '../../hooks/useUsers';
+// import { useUsersByRole } from '../../hooks/useUsers';
 import { useVehicleList } from '../../hooks/useVehicles';
-import { useVehicleAssetList } from '../../hooks/useVehicleAssets';
+import { useAssetList } from '../../hooks/useAssets';
 import { toast } from 'react-toastify';
-import { FiPackage, FiUser, FiTruck, FiCalendar, FiFileText, FiInfo, FiX, FiCheck } from 'react-icons/fi';
+import { FiPackage, FiTruck, FiCalendar, FiFileText, FiInfo, FiX, FiCheck } from 'react-icons/fi';
 import SearchableSelect from '../SearchableSelect';
 
 interface AssetAssignmentModalProps {
     open: boolean;
     onClose: () => void;
     onSuccess?: () => void;
+    userId?: string; // Add userId prop
 }
 
 const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
     open,
     onClose,
     onSuccess,
+    userId,
 }) => {
     const [formData, setFormData] = useState({
         assetId: '',
-        userId: '',
+        userId: userId || '',
         vehicleId: '',
         vehicleAssignmentId: '',
         assignmentType: 'user_only' as 'user_only' | 'vehicle_specific' | 'temporary',
@@ -41,15 +43,11 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
 
     // Hooks
     const assignAssetMutation = useAssignAsset();
-    const { data: usersData } = useUsersByRole({ role: 'rider', page: 1, limit: 100 });
     const { data: vehiclesData } = useVehicleList(1, 100);
-    const { data: assetsData } = useVehicleAssetList(1, 100, { status: 'available' });
+    const { data: assetsData } = useAssetList(1, 100, { status: 'available' });
 
     // Get available assets
     const availableAssets = assetsData?.items || [];
-
-    // Get users (riders)
-    const users = usersData?.users || [];
 
     // Get vehicles
     const vehicles = vehiclesData?.items || [];
@@ -62,7 +60,7 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
         const newErrors: Record<string, string> = {};
 
         if (!formData.assetId) newErrors.assetId = 'Asset is required';
-        if (!formData.userId) newErrors.userId = 'User is required';
+        if (!formData.userId) newErrors.userId = 'User ID is required';
         if (!formData.assignmentReason) newErrors.assignmentReason = 'Assignment reason is required';
         if (!formData.assignmentPurpose) newErrors.assignmentPurpose = 'Assignment purpose is required';
         if (!formData.expectedReturnDate) newErrors.expectedReturnDate = 'Expected return date is required';
@@ -103,7 +101,7 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
     const handleClose = () => {
         setFormData({
             assetId: '',
-            userId: '',
+            userId: userId || '',
             vehicleId: '',
             vehicleAssignmentId: '',
             assignmentType: 'user_only',
@@ -134,6 +132,16 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
         }
     }, [formData.vehicleId, formData.assignmentType, vehicles]);
 
+    // Update userId when prop changes
+    useEffect(() => {
+        if (userId) {
+            setFormData(prev => ({
+                ...prev,
+                userId: userId,
+            }));
+        }
+    }, [userId]);
+
     return (
         <Modal open={open} onClose={handleClose} title="Assign Asset to User">
             <div className="max-w-4xl mx-auto h-[80vh] flex flex-col">
@@ -162,66 +170,33 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Asset and User Selection */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Asset Selection */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                                    <FiPackage className="w-4 h-4 text-purple-600" />
-                                </div>
-                                <h4 className="text-lg font-medium text-gray-900">Asset Details</h4>
+                    {/* Asset Selection */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <FiPackage className="w-4 h-4 text-purple-600" />
                             </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Select Asset *
-                                </label>
-                                <SearchableSelect
-                                    label='Select Asset *'
-                                    value={formData.assetId}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, assetId: value }))}
-                                    options={availableAssets.map(asset => ({
-                                        label: `${asset.assetName} (${asset.serialNumber || 'No SN'}) - ${asset.assetType?.name || 'Unknown Type'}`,
-                                        value: asset._id,
-                                    }))}
-                                    placeholder="Search and select an asset..."
-                                    error={errors.assetId}
-                                />
-                                {availableAssets.length === 0 && (
-                                    <p className="text-sm text-gray-500 mt-2">No available assets found</p>
-                                )}
-                            </div>
+                            <h4 className="text-lg font-medium text-gray-900">Asset Details</h4>
                         </div>
-
-                        {/* User Selection */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <FiUser className="w-4 h-4 text-green-600" />
-                                </div>
-                                <h4 className="text-lg font-medium text-gray-900">User Details</h4>
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Select User *
-                                </label>
-                                <SearchableSelect
-                                    label='Select User *'
-                                    value={formData.userId}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, userId: value }))}
-                                    options={users.map(user => ({
-                                        label: `${user.name || 'N/A'} (${user.profileCode}) - ${user.authRef?.identifier || 'No Phone'}`,
-                                        value: user._id,
-                                    }))}
-                                    placeholder="Search and select a user..."
-                                    error={errors.userId}
-                                />
-                                {users.length === 0 && (
-                                    <p className="text-sm text-gray-500 mt-2">No users found</p>
-                                )}
-                            </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Select Asset *
+                            </label>
+                            <SearchableSelect
+                                label='Select Asset *'
+                                value={formData.assetId}
+                                onChange={(value) => setFormData(prev => ({ ...prev, assetId: value }))}
+                                options={availableAssets.map(asset => ({
+                                    label: `${asset.assetName} (${asset.serialNumber || 'No SN'}) - ${asset.assetType?.name || 'Unknown Type'}`,
+                                    value: asset._id,
+                                }))}
+                                placeholder="Search and select an asset..."
+                                error={errors.assetId}
+                            />
+                            {availableAssets.length === 0 && (
+                                <p className="text-sm text-gray-500 mt-2">No available assets found</p>
+                            )}
                         </div>
                     </div>
 
@@ -249,9 +224,9 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
                                     }))}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                                 >
-                                    <option value="user_only">👤 User Only (Not vehicle specific)</option>
-                                    <option value="vehicle_specific">🚗 Vehicle Specific</option>
-                                    <option value="temporary">⏰ Temporary</option>
+                                    <option value="user_only">User Only (Not vehicle specific)</option>
+                                    <option value="vehicle_specific">Vehicle Specific</option>
+                                    <option value="temporary">Temporary</option>
                                 </select>
                                 <p className="text-xs text-gray-500 mt-1">
                                     Choose how this asset will be used

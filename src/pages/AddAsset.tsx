@@ -2,20 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Button from '../components/Button';
-import SearchableSelect from '../components/SearchableSelect';
-import { FiPackage, FiSave, FiX, FiUpload } from 'react-icons/fi';
+// import SearchableSelect from '../components/SearchableSelect';
+import { FiPackage, FiSave, FiX, FiUpload, FiClock, FiUser, FiCalendar, FiCheck } from 'react-icons/fi';
 import {
     useAssetTypes,
     useAssetVendors,
-    useVehicleAsset,
-    useCreateVehicleAsset,
-    useUpdateVehicleAsset
-} from '../hooks/useVehicleAssets';
+    useAsset,
+    useCreateAsset,
+    useUpdateAsset
+} from '../hooks/useAssets';
+import { useAssetAssignmentHistory } from '../hooks/useAssetAssignment';
+import { toast } from 'react-toastify';
 // Removed vehicle import as vehicle field is no longer part of assets
 // import { useUsersByRole } from '../hooks/useUsers';
 
 interface AssetFormData {
-    vehicleAssignment?: string;
     assetType: string;
     assetVendor?: string;
     assetName: string;
@@ -32,9 +33,9 @@ const AddAsset: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams(); // For editing existing asset
     const [isEditing, setIsEditing] = useState(false);
+    const [activeTab, setActiveTab] = useState(0); // 0: Details, 1: History
 
     const [formData, setFormData] = useState<AssetFormData>({
-        vehicleAssignment: '',
         assetType: '',
         assetVendor: '',
         assetName: '',
@@ -53,9 +54,10 @@ const AddAsset: React.FC = () => {
     const { data: assetTypesData } = useAssetTypes();
     const { data: assetVendorsData } = useAssetVendors();
     // const { data: usersData } = useUsersByRole({ role: 'rider', limit: 1000 }); // Get all riders
-    const { data: assetData } = useVehicleAsset(id || '');
-    const createAssetMutation = useCreateVehicleAsset();
-    const updateAssetMutation = useUpdateVehicleAsset();
+    const { data: assetData } = useAsset(id || '');
+    const { data: assetHistory } = useAssetAssignmentHistory(id || '');
+    const createAssetMutation = useCreateAsset();
+    const updateAssetMutation = useUpdateAsset();
     const isLoading = createAssetMutation.isPending || updateAssetMutation.isPending;
     const [uploadProgress, setUploadProgress] = useState<number>(0);
 
@@ -70,7 +72,6 @@ const AddAsset: React.FC = () => {
     useEffect(() => {
         if (assetData && isEditing) {
             setFormData({
-                vehicleAssignment: assetData.vehicleAssignment?._id || '',
                 assetType: assetData.assetType?._id || '',
                 assetVendor: assetData.assetVendor?._id || '',
                 assetName: assetData.assetName || '',
@@ -82,7 +83,7 @@ const AddAsset: React.FC = () => {
                 assignedTo: assetData.assignedTo?._id || '',
                 notes: assetData.notes || '',
             });
-            
+
             // Set image preview if editing
             if (assetData.image) {
                 setImagePreview(assetData.image);
@@ -142,14 +143,14 @@ const AddAsset: React.FC = () => {
 
         // Validate required fields
         if (!formData.assetType) {
-            alert('Please select an asset type');
+            toast.error('Please select an asset type');
             return;
         }
 
         try {
             // Create FormData for file upload
             const formDataToSend = new FormData();
-            
+
             // Add all form fields
             Object.keys(formData).forEach(key => {
                 const value = formData[key as keyof AssetFormData];
@@ -165,18 +166,18 @@ const AddAsset: React.FC = () => {
 
             if (isEditing && id) {
                 await updateAssetMutation.mutateAsync({ id, data: formDataToSend });
-                alert('Asset updated successfully!');
+                toast.success('Asset updated successfully!');
             } else {
                 await createAssetMutation.mutateAsync(formDataToSend);
-                alert('Asset created successfully!');
+                toast.success('Asset created successfully!');
             }
 
             // Navigate back to vehicle master
             navigate('/vehicle-master');
 
         } catch (error) {
-            console.error('Error saving asset:', error);
-            alert('Error saving asset. Please try again.');
+            console.log('Error saving asset:', error);
+            toast.error('Error saving asset. Please try again.');
         } finally {
             setUploadProgress(0);
         }
@@ -223,9 +224,37 @@ const AddAsset: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Form */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Tabs - Only show when editing */}
+                {isEditing && (
+                    <div className="flex gap-2 mb-4">
+                        <button
+                            onClick={() => setActiveTab(0)}
+                            className={`px-4 py-2 rounded-t-lg text-sm font-medium focus:outline-none ${
+                                activeTab === 0
+                                    ? 'bg-white text-[#3B36FF] shadow border-b-2 border-[#3B36FF]'
+                                    : 'bg-transparent text-gray-500'
+                            }`}
+                        >
+                            Asset Details
+                        </button>
+                        <button
+                            onClick={() => setActiveTab(1)}
+                            className={`px-4 py-2 rounded-t-lg text-sm font-medium focus:outline-none ${
+                                activeTab === 1
+                                    ? 'bg-white text-[#3B36FF] shadow border-b-2 border-[#3B36FF]'
+                                    : 'bg-transparent text-gray-500'
+                            }`}
+                        >
+                            Assignment History
+                        </button>
+                    </div>
+                )}
+
+                {/* Content based on active tab */}
+                {activeTab === 0 ? (
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Basic Information */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -383,7 +412,7 @@ const AddAsset: React.FC = () => {
                                             </span>
                                         )}
                                     </div>
-                                    
+
                                     {(imagePreview || formData.image) && (
                                         <div className="flex items-center gap-3">
                                             <img
@@ -405,7 +434,7 @@ const AddAsset: React.FC = () => {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     <p className="text-xs text-gray-500">
                                         Supported formats: JPG, PNG. Max size: 5MB
                                     </p>
@@ -431,6 +460,176 @@ const AddAsset: React.FC = () => {
                         </div>
                     </form>
                 </div>
+                ) : (
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        {/* Asset History */}
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <FiClock className="text-2xl text-[#3B36FF]" />
+                                <h2 className="text-xl font-semibold text-gray-900">Asset Assignment History</h2>
+                            </div>
+
+                            {assetHistory && assetHistory.length > 0 ? (
+                                <div className="space-y-4">
+                                    {assetHistory.map((assignment: any, index: number) => (
+                                        <div key={assignment._id || index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                                        assignment.assignmentStatus === 'active' ? 'bg-blue-100' :
+                                                        assignment.assignmentStatus === 'returned' ? 'bg-gray-100' :
+                                                        assignment.assignmentStatus === 'pending' ? 'bg-yellow-100' :
+                                                        assignment.assignmentStatus === 'approved' ? 'bg-green-100' :
+                                                        assignment.assignmentStatus === 'rejected' ? 'bg-red-100' : 'bg-gray-100'
+                                                    }`}>
+                                                        {assignment.assignmentStatus === 'active' ? (
+                                                            <FiUser className="w-4 h-4 text-blue-600" />
+                                                        ) : assignment.assignmentStatus === 'returned' ? (
+                                                            <FiCalendar className="w-4 h-4 text-gray-600" />
+                                                        ) : assignment.assignmentStatus === 'pending' ? (
+                                                            <FiClock className="w-4 h-4 text-yellow-600" />
+                                                        ) : assignment.assignmentStatus === 'approved' ? (
+                                                            <FiCheck className="w-4 h-4 text-green-600" />
+                                                        ) : assignment.assignmentStatus === 'rejected' ? (
+                                                            <FiX className="w-4 h-4 text-red-600" />
+                                                        ) : (
+                                                            <FiPackage className="w-4 h-4 text-gray-600" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-medium text-gray-900 capitalize">
+                                                            Asset {assignment.assignmentStatus === 'active' ? 'Assigned' :
+                                                                   assignment.assignmentStatus === 'returned' ? 'Returned' :
+                                                                   assignment.assignmentStatus === 'pending' ? 'Assignment Pending' :
+                                                                   assignment.assignmentStatus === 'approved' ? 'Assignment Approved' :
+                                                                   assignment.assignmentStatus === 'rejected' ? 'Assignment Rejected' : assignment.assignmentStatus}
+                                                        </h4>
+                                                        <p className="text-sm text-gray-500">
+                                                            {assignment.assignmentDate ? new Date(assignment.assignmentDate).toLocaleDateString('en-US', {
+                                                                year: 'numeric',
+                                                                month: 'long',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            }) : 'Unknown date'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Assignment Details */}
+                                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                                {assignment.assignedTo && (
+                                                    <div className="flex items-center gap-2">
+                                                        <FiUser className="w-4 h-4 text-gray-400" />
+                                                        <span className="text-gray-600">
+                                                            <span className="font-medium">Assigned To:</span> {assignment.assignedTo.name || assignment.assignedTo.profileCode || 'Unknown User'}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {assignment.assignedBy && (
+                                                    <div className="flex items-center gap-2">
+                                                        <FiUser className="w-4 h-4 text-gray-400" />
+                                                        <span className="text-gray-600">
+                                                            <span className="font-medium">Assigned By:</span> {assignment.assignedBy.name || assignment.assignedBy.profileCode || 'Unknown User'}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {assignment.expectedReturnDate && (
+                                                    <div className="flex items-center gap-2">
+                                                        <FiCalendar className="w-4 h-4 text-gray-400" />
+                                                        <span className="text-gray-600">
+                                                            <span className="font-medium">Expected Return:</span> {new Date(assignment.expectedReturnDate).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {assignment.actualReturnDate && (
+                                                    <div className="flex items-center gap-2">
+                                                        <FiCalendar className="w-4 h-4 text-gray-400" />
+                                                        <span className="text-gray-600">
+                                                            <span className="font-medium">Actual Return:</span> {new Date(assignment.actualReturnDate).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {assignment.assignmentType && (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-gray-600">
+                                                            <span className="font-medium">Type:</span> {assignment.assignmentType.replace('_', ' ').toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {assignment.assignmentReason && (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-gray-600">
+                                                            <span className="font-medium">Reason:</span> {assignment.assignmentReason}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Assignment Purpose */}
+                                            {assignment.assignmentPurpose && (
+                                                <div className="mt-3">
+                                                    <span className="text-sm text-gray-600">
+                                                        <span className="font-medium">Purpose:</span> {assignment.assignmentPurpose}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Asset Condition */}
+                                            {assignment.assetConditionAtAssignment && (
+                                                <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                                                    <h5 className="text-sm font-medium text-blue-700 mb-1">Asset Condition at Assignment:</h5>
+                                                    <p className="text-sm text-blue-600">{assignment.assetConditionAtAssignment.description}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Return Condition */}
+                                            {assignment.assetConditionAtReturn && (
+                                                <div className="mt-3 p-3 bg-green-50 rounded-md">
+                                                    <h5 className="text-sm font-medium text-green-700 mb-1">Asset Condition at Return:</h5>
+                                                    <p className="text-sm text-green-600">{assignment.assetConditionAtReturn.description}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Notes */}
+                                            {assignment.notes && (
+                                                <div className="mt-3 p-3 bg-yellow-50 rounded-md">
+                                                    <h5 className="text-sm font-medium text-yellow-700 mb-1">Notes:</h5>
+                                                    <p className="text-sm text-yellow-600">{assignment.notes}</p>
+                                                </div>
+                                            )}
+
+                                            {/* Status Badge */}
+                                            <div className="mt-3">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    assignment.assignmentStatus === 'active' ? 'bg-blue-100 text-blue-800' :
+                                                    assignment.assignmentStatus === 'returned' ? 'bg-gray-100 text-gray-800' :
+                                                    assignment.assignmentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                    assignment.assignmentStatus === 'approved' ? 'bg-green-100 text-green-800' :
+                                                    assignment.assignmentStatus === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {assignment.assignmentStatus.toUpperCase()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <FiClock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No History Available</h3>
+                                    <p className="text-gray-500">This asset doesn't have any assignment history yet.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </Layout>
     );

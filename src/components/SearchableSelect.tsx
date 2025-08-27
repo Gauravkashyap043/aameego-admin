@@ -34,7 +34,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
     // Filter options based on search term
     useEffect(() => {
         const filtered = options.filter(option =>
-            option.label.toLowerCase().includes(searchTerm.toLowerCase())
+            (option.label || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
         setFilteredOptions(filtered);
     }, [searchTerm, options]);
@@ -60,7 +60,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         setHighlightedIndex(-1);
     }, [filteredOptions]);
 
-    const selectedOption = options.find(option => option.value === value);
+    const selectedOption = options.find(option => option.value === value && option.label);
 
     const handleSelect = (option: { label: string; value: string }) => {
         onChange(option.value);

@@ -185,4 +185,16 @@ export const useUnassignRiderByProfileCode = () => {
       queryClient.invalidateQueries({ queryKey: ['users', 'riders-supervisors'] });
     },
   });
+};
+
+// Hook for getting all users for asset assignment
+export const useAllUsers = (page = 1, limit = 100) => {
+  return useQuery({
+    queryKey: ['users', 'all', page, limit],
+    queryFn: async () => {
+      const response = await api.get(`/user?page=${page}&limit=${limit}`);
+      return response.data.data;
+    },
+    staleTime: 30000,
+  });
 }; 

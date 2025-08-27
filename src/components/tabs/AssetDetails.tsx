@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useUserAssetAssignments } from '../../hooks/useAssetAssignment';
-import { useReturnAsset } from '../../hooks/useAssetAssignment';
+import { useUserAssetAssignments, useReturnAsset } from '../../hooks/useAssetAssignment';
 import AssetAssignmentModal from '../modals/AssetAssignmentModal';
 import Button from '../Button';
 import { toast } from 'react-toastify';
@@ -214,38 +213,38 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2 ml-4">
-                     {isActive && assignment.assignmentStatus === 'active' && (
-             <Button
-               variant="secondary"
-               onClick={() => {
-                 setSelectedAssignment(assignment);
-                 setShowReturnModal(true);
-               }}
-               className="flex items-center gap-2 text-sm px-3 py-2"
-             >
-               <FiArrowRight className="w-4 h-4" />
-               Return Asset
-             </Button>
-           )}
-           
-           {isActive && assignment.assignmentStatus === 'pending' && (
-             <div className="flex gap-2">
-               <Button
-                 variant="success"
-                 className="flex items-center gap-2 text-sm px-3 py-2"
-               >
-                 <FiCheck className="w-4 h-4" />
-                 Approve
-               </Button>
-               <Button
-                 variant="danger"
-                 className="flex items-center gap-2 text-sm px-3 py-2"
-               >
-                 <FiX className="w-4 h-4" />
-                 Reject
-               </Button>
-             </div>
-           )}
+          {isActive && assignment.assignmentStatus === 'active' && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSelectedAssignment(assignment);
+                setShowReturnModal(true);
+              }}
+              className="flex items-center gap-2 text-sm px-3 py-2"
+            >
+              <FiArrowRight className="w-4 h-4" />
+              Return Asset
+            </Button>
+          )}
+          
+          {isActive && assignment.assignmentStatus === 'pending' && (
+            <div className="flex gap-2">
+              <Button
+                variant="success"
+                className="flex items-center gap-2 text-sm px-3 py-2"
+              >
+                <FiCheck className="w-4 h-4" />
+                Approve
+              </Button>
+              <Button
+                variant="danger"
+                className="flex items-center gap-2 text-sm px-3 py-2"
+              >
+                <FiX className="w-4 h-4" />
+                Reject
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -333,13 +332,25 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
         open={showAssignModal}
         onClose={() => setShowAssignModal(false)}
         onSuccess={handleAssignSuccess}
+        userId={userId}
       />
 
       {/* Return Asset Modal */}
       {showReturnModal && selectedAssignment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Return Asset</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Return Asset</h3>
+              <button
+                onClick={() => {
+                  setShowReturnModal(false);
+                  setSelectedAssignment(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
             <p className="text-gray-600 mb-4">
               Are you sure you want to return "{selectedAssignment.asset?.assetName}"?
             </p>
@@ -401,3 +412,5 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
 };
 
 export default AssetDetails;
+
+

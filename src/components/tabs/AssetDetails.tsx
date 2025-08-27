@@ -3,7 +3,7 @@ import { useUserAssetAssignments, useReturnAsset } from '../../hooks/useAssetAss
 import AssetAssignmentModal from '../modals/AssetAssignmentModal';
 import Button from '../Button';
 import { toast } from 'react-toastify';
-import { FiPackage, FiUser, FiTruck, FiCalendar, FiFileText, FiPlus, FiArrowRight, FiCheck, FiX, FiClock } from 'react-icons/fi';
+import { FiPackage, FiUser, FiTruck, FiFileText, FiPlus, FiArrowRight, FiCheck, FiX, FiClock } from 'react-icons/fi';
 
 interface AssetDetailsProps {
   userId: string;
@@ -87,18 +87,12 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
     );
   };
 
-  const isOverdue = (expectedReturnDate: string) => {
-    return new Date(expectedReturnDate) < new Date();
-  };
+
 
   const renderAssignmentCard = (assignment: any, isActive: boolean = true) => (
     <div
       key={assignment._id}
-      className={`bg-white rounded-lg border p-6 hover:shadow-md transition-shadow ${
-        isOverdue(assignment.expectedReturnDate) && assignment.assignmentStatus === 'active'
-          ? 'border-orange-300 bg-orange-50'
-          : 'border-gray-200'
-      }`}
+      className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between">
         {/* Asset Information */}
@@ -135,12 +129,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
               </div>
             )}
 
-            <div className="flex items-center gap-2">
-              <FiCalendar className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600">
-                <span className="font-medium">Expected Return:</span> {new Date(assignment.expectedReturnDate).toLocaleDateString()}
-              </span>
-            </div>
+
 
             <div className="flex items-center gap-2">
               <FiFileText className="w-4 h-4 text-gray-400" />
@@ -166,12 +155,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
           <div className="flex items-center gap-3 mb-4">
             {getStatusBadge(assignment.assignmentStatus)}
             {getAssignmentTypeBadge(assignment.assignmentType)}
-            {isOverdue(assignment.expectedReturnDate) && assignment.assignmentStatus === 'active' && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                <span className="mr-1.5 w-2 h-2 rounded-full bg-red-500"></span>
-                Overdue
-              </span>
-            )}
+
           </div>
 
           {/* Assignment Dates */}

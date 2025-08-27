@@ -6,7 +6,7 @@ import { useAssignAsset } from '../../hooks/useAssetAssignment';
 import { useVehicleList } from '../../hooks/useVehicles';
 import { useAssetList } from '../../hooks/useAssets';
 import { toast } from 'react-toastify';
-import { FiPackage, FiTruck, FiCalendar, FiFileText, FiInfo, FiX, FiCheck } from 'react-icons/fi';
+import { FiPackage, FiTruck, FiFileText, FiInfo, FiX, FiCheck } from 'react-icons/fi';
 import SearchableSelect from '../SearchableSelect';
 
 interface AssetAssignmentModalProps {
@@ -30,7 +30,6 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
         assignmentType: 'user_only' as 'user_only' | 'vehicle_specific' | 'temporary',
         assignmentReason: '',
         assignmentPurpose: '',
-        expectedReturnDate: '',
         condition: {
             description: '',
             images: [] as string[],
@@ -63,7 +62,6 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
         if (!formData.userId) newErrors.userId = 'User ID is required';
         if (!formData.assignmentReason) newErrors.assignmentReason = 'Assignment reason is required';
         if (!formData.assignmentPurpose) newErrors.assignmentPurpose = 'Assignment purpose is required';
-        if (!formData.expectedReturnDate) newErrors.expectedReturnDate = 'Expected return date is required';
         if (!formData.condition.description) newErrors.conditionDescription = 'Asset condition description is required';
 
         if (formData.assignmentType === 'vehicle_specific' && !formData.vehicleId) {
@@ -84,7 +82,6 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
                 assignmentType: formData.assignmentType,
                 assignmentReason: formData.assignmentReason,
                 assignmentPurpose: formData.assignmentPurpose,
-                expectedReturnDate: new Date(formData.expectedReturnDate),
                 condition: formData.condition,
                 notes: formData.notes,
             });
@@ -107,7 +104,6 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
             assignmentType: 'user_only',
             assignmentReason: '',
             assignmentPurpose: '',
-            expectedReturnDate: '',
             condition: {
                 description: '',
                 images: [],
@@ -304,60 +300,32 @@ const AssetAssignmentModal: React.FC<AssetAssignmentModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Return Date and Condition */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Expected Return Date */}
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="w-6 h-6 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                    <FiCalendar className="w-3 h-3 text-yellow-600" />
-                                </div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Expected Return Date *
-                                </label>
+                    {/* Asset Condition */}
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-red-100 rounded-lg flex items-center justify-center">
+                                <FiFileText className="w-3 h-3 text-red-600" />
                             </div>
-                            <input
-                                type="date"
-                                value={formData.expectedReturnDate}
-                                onChange={(e) => setFormData(prev => ({ ...prev, expectedReturnDate: e.target.value }))}
-                                min={new Date().toISOString().split('T')[0]}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                            />
-                            {errors.expectedReturnDate && (
-                                <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                                    <FiX className="w-3 h-3" />
-                                    {errors.expectedReturnDate}
-                                </p>
-                            )}
+                            <label className="block text-sm font-medium text-gray-700">
+                                Asset Condition at Assignment *
+                            </label>
                         </div>
-
-                        {/* Asset Condition */}
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="w-6 h-6 bg-red-100 rounded-lg flex items-center justify-center">
-                                    <FiFileText className="w-3 h-3 text-red-600" />
-                                </div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Asset Condition at Assignment *
-                                </label>
-                            </div>
-                            <textarea
-                                value={formData.condition.description}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    condition: { ...prev.condition, description: e.target.value }
-                                }))}
-                                placeholder="Describe the current condition of the asset..."
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
-                                rows={3}
-                            />
-                            {errors.conditionDescription && (
-                                <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                                    <FiX className="w-3 h-3" />
-                                    {errors.conditionDescription}
-                                </p>
-                            )}
-                        </div>
+                        <textarea
+                            value={formData.condition.description}
+                            onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                condition: { ...prev.condition, description: e.target.value }
+                            }))}
+                            placeholder="Describe the current condition of the asset..."
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
+                            rows={3}
+                        />
+                        {errors.conditionDescription && (
+                            <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                                <FiX className="w-3 h-3" />
+                                {errors.conditionDescription}
+                            </p>
+                        )}
                     </div>
 
                     {/* Additional Notes */}

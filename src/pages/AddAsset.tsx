@@ -537,14 +537,7 @@ const AddAsset: React.FC = () => {
                                                     </div>
                                                 )}
 
-                                                {assignment.expectedReturnDate && (
-                                                    <div className="flex items-center gap-2">
-                                                        <FiCalendar className="w-4 h-4 text-gray-400" />
-                                                        <span className="text-gray-600">
-                                                            <span className="font-medium">Expected Return:</span> {new Date(assignment.expectedReturnDate).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                )}
+
 
                                                 {assignment.actualReturnDate && (
                                                     <div className="flex items-center gap-2">

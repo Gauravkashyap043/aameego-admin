@@ -22,7 +22,6 @@ export const useAssignAsset = () => {
       assignmentType: 'user_only' | 'vehicle_specific' | 'temporary';
       assignmentReason: string;
       assignmentPurpose: string;
-      expectedReturnDate: Date;
       condition: {
         description: string;
         images?: string[];

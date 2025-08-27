@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { FiChevronDown, FiSearch } from "react-icons/fi";
+import FilterDropdown from "./FilterDropdown";
 
 // ---------- Types ----------
 type Column<T> = {
@@ -158,20 +159,61 @@ export function UserTable<T extends { id: string; name?: string; status?: string
 
   return (
     <div>
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-3">
-        <div className="flex items-center w-full sm:w-1/4 bg-indigo-50 px-3 py-2 rounded-lg text-xs shadow-sm">
-          <FiSearch className="text-gray-400 mr-2" size={14} />
-          <input type="text" placeholder="Search" value={search} onChange={e => { setSearch(e.target.value); onSearch?.(e.target.value); }} className="bg-transparent focus:outline-none w-full text-sm" />
-        </div>
-        <select value={sortFilter} onChange={e => setSortFilter(e.target.value)} className="bg-indigo-50 px-3 py-2 rounded-lg text-xs shadow-sm">
-          <option value="latest">Latest</option><option value="oldest">Oldest</option><option value="pastWeek">Past Week</option><option value="pastMonth">Past Month</option><option value="pastYear">Past Year</option>
-        </select>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-indigo-50 px-3 py-2 rounded-lg text-xs shadow-sm">
-          <option value="all">All</option><option value="pending">Pending</option><option value="verified">Verified</option><option value="deactive">Deactive</option><option value="rejected">Rejected</option>
-        </select>
-        <button onClick={onAddNew} className="ml-auto px-3 py-2 bg-blue-600 text-white text-xs rounded-lg">Assign supervisor</button>
-      </div>
+     {/* Controls */}
+<div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-3">
+  {/* Search */}
+  <div className="flex items-center w-full sm:w-1/4 bg-indigo-50 px-3 py-2 rounded-lg text-xs shadow-sm">
+    <FiSearch className="text-gray-400 mr-2" size={14} />
+    <input
+      type="text"
+      placeholder="Search"
+      value={search}
+      onChange={(e) => {
+        setSearch(e.target.value);
+        onSearch?.(e.target.value);
+      }}
+      className="bg-transparent outline-none w-full text-xs text-gray-600 placeholder-gray-400"
+    />
+  </div>
+
+  {/* Show Filter */}
+  <FilterDropdown
+    label="Show"
+    value={sortFilter}
+    onChange={setSortFilter}
+    options={[
+      { label: "Latest", value: "latest" },
+      { label: "Oldest", value: "oldest" },
+      { label: "Past Week", value: "pastWeek" },
+      { label: "Past Month", value: "pastMonth" },
+      { label: "Past Year", value: "pastYear" },
+    ]}
+  />
+
+  {/* Status Filter */}
+  <FilterDropdown
+    label="Status"
+    value={statusFilter}
+    onChange={setStatusFilter}
+    options={[
+      { label: "All", value: "all" },
+      { label: "Pending", value: "pending" },
+      { label: "Verified", value: "verified" },
+      { label: "Deactive", value: "deactive" },
+      { label: "Rejected", value: "rejected" },
+    ]}
+  />
+
+  {/* Keep Button */}
+  <div className="ml-auto">
+    <button
+      onClick={onAddNew}
+      className="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg"
+    >
+      Assign supervisor
+    </button>
+  </div>
+</div>
 
       {/* Desktop Table */}
       <div className="hidden lg:block overflow-x-auto">

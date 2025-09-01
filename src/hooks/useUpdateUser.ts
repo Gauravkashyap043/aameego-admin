@@ -90,4 +90,55 @@ export function useUpdateUserStatus() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });
+}
+
+// Hook for updating profile picture
+export function useUpdateProfilePicture() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    any,
+    Error,
+    { userId: string; profilePictureUrl: string }
+  >({
+    mutationFn: async ({ userId, profilePictureUrl }) => {
+      const response = await api.put(`/user/${userId}/profile-picture`, {
+        profilePictureUrl,
+      });
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch user data
+      queryClient.invalidateQueries({ queryKey: ['user', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+// Hook for uploading profile picture
+export function useUploadProfilePicture() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    any,
+    Error,
+    { userId: string; file: File }
+  >({
+    mutationFn: async ({ userId, file }) => {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+      
+      const response = await api.put(`/user/${userId}/upload-profile-picture`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch user data
+      queryClient.invalidateQueries({ queryKey: ['user', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
 } 

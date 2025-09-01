@@ -10,6 +10,7 @@ import {
   useUpdateUserPersonalDetails,
   useUpdateDocument,
   useUpdateUserStatus,
+  useUploadProfilePicture,
 } from "../hooks/useUpdateUser";
 import { useFetchBusinessPartners } from "../hooks/useFetchBusinessPartners";
 import { toast } from "react-toastify";
@@ -25,6 +26,7 @@ import VehicleStatusModal from "../components/VehicleStatusModal";
 import { useUnassignRiderByProfileCode, useUsersByRole } from "../hooks/useUsers";
 import VehicalDetails from "../components/tabs/VehicalDetails";
 import AssetDetails from "../components/tabs/AssetDetails";
+import PersonalInformation from "../components/tabs/PersonalInformation";
 
 const TABS = [
   "Personal information",
@@ -44,11 +46,9 @@ const AddUser: React.FC = () => {
   const [error, setError] = useState("");
 
   // Add the new hooks
-  const updateUserPersonalDetails = useUpdateUserPersonalDetails();
   const updateDocument = useUpdateDocument();
   const updateUserStatus = useUpdateUserStatus();
   const createOrUpdateDocRemark = useCreateOrUpdateDocRemark();
-  const { data: businessPartnersData, isLoading: loadingBusinessPartners } = useFetchBusinessPartners();
   const { refetch: refetchAssignments } = useFetchVehicleAssignment(authId);
   const { data: userData, isLoading: loadingUser } = useFetchUser(userId);
   const updateVehicleStatus = useUpdateVehicleStatus();
@@ -74,17 +74,7 @@ const AddUser: React.FC = () => {
   const [assignRiderLoading, setAssignRiderLoading] = useState(false);
 
   // Form fields
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [dob, setDob] = useState("");
-  const [gender, setGender] = useState("");
-  const [father, setFather] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [pin, setPin] = useState("");
-  const [state, setState] = useState("");
   const [role, setRole] = useState("");
-  const [businessPartner, setBusinessPartner] = useState("");
   // Bank
   const [bankName, setBankName] = useState("");
   const [bankFullName, setBankFullName] = useState("");
@@ -186,7 +176,7 @@ const AddUser: React.FC = () => {
           setShowRejectModal(false);
           setShowDeactivateModal(false);
           // Navigate back to user list
-          navigate("/user-management");
+          // navigate("/user-management");
         },
         onError: (error) => {
           setIsRejecting(false);
@@ -204,47 +194,7 @@ const AddUser: React.FC = () => {
     handleStatusUpdate("verified");
   };
 
-  // Validation functions
-  const validatePersonalInfo = () => {
-    if (!fullName.trim()) {
-      setError("Full name is required");
-      return false;
-    }
-    if (!phone.trim()) {
-      setError("Phone number is required");
-      return false;
-    }
-    if (!dob) {
-      setError("Date of birth is required");
-      return false;
-    }
-    if (!gender) {
-      setError("Gender is required");
-      return false;
-    }
-    if (!father.trim()) {
-      setError("Father's name is required");
-      return false;
-    }
-    if (!city.trim()) {
-      setError("City/District is required");
-      return false;
-    }
-    if (!address.trim()) {
-      setError("Address is required");
-      return false;
-    }
-    if (!pin.trim()) {
-      setError("PIN code is required");
-      return false;
-    }
-    if (!state.trim()) {
-      setError("State is required");
-      return false;
-    }
-    setError("");
-    return true;
-  };
+
 
   const validateBankDetails = () => {
     if (!bankName.trim()) {
@@ -291,20 +241,8 @@ const AddUser: React.FC = () => {
   useEffect(() => {
     if (userData) {
       setRole(userData?.role?.roleName);
-      setFullName(userData.name || "");
       setAuthId(userData.authRef?._id || "");
-      setPhone(userData.authRef?.identifier || "");
-      setDob(
-        formatDateForInput(userData.document?.aadhaar?.ocrFront?.dob || "")
-      );
       setAssignedUser(userData.assignedUser || []);
-      setGender(userData.document?.aadhaar?.ocrFront?.gender || "");
-      setFather(userData.fatherName || "");
-      setAddress(userData?.addressRef?.address || "");
-      setCity(userData?.addressRef?.cityDistrict || "");
-      setPin(userData?.addressRef?.pinCode || "");
-      setState(userData?.addressRef?.state || "");
-      setBusinessPartner(userData?.businessPartnerRef?._id || "");
       setBankName(userData.document?.bank?.details?.bankName || "");
       setBankFullName(userData.document?.bank?.details?.holderName || "");
       setAccountNumber(userData.document?.bank?.details?.accountNumber || "");
@@ -527,48 +465,7 @@ const AddUser: React.FC = () => {
     }
   };
 
-  // Save personal information
-  const handleSavePersonalInfo = () => {
-    if (!userId) return;
 
-    if (!validatePersonalInfo()) {
-      return;
-    }
-
-    setSaving(true);
-
-    const personalData: any = {
-      fullName: fullName,
-      dob: formatDateForBackend(dob),
-      gender: gender.toLowerCase(),
-      fatherName: father,
-      businessPartnerRef: businessPartner || undefined,
-      address: {
-        address: address,
-        cityDistrict: city,
-        pinCode: pin,
-        state,
-      },
-    };
-
-    updateUserPersonalDetails.mutate(
-      { userId: String(userId), data: personalData },
-      {
-        onSuccess: () => {
-          setSaving(false);
-          toast.success("Personal information updated successfully!");
-          setHasChanges((prev) => ({ ...prev, personal: false }));
-          setTimeout(() => {
-            setActiveTab(1); // Move to next tab
-          }, 2000);
-        },
-        onError: (error: any) => {
-          setSaving(false);
-          toast.error(`Failed to save personal information: ${error.message}`);
-        },
-      }
-    );
-  };
 
   // Save bank details
   const handleSaveBankDetails = () => {
@@ -655,10 +552,6 @@ const AddUser: React.FC = () => {
       JSON.stringify({
         ocrFront: {
           aadharNumber: aadhaarNumber,
-          name: fullName,
-          dob: formatDateForBackend(dob),
-          rawText: address,
-          gender: gender.toLowerCase(),
         },
         ocrBack: {
           aadharNumber: aadhaarNumber,
@@ -694,12 +587,9 @@ const AddUser: React.FC = () => {
       JSON.stringify({
         ocrFront: {
           dlNumber: licenseNumber,
-          name: fullName || "",
-          dob: formatDateForBackend(dob) || "",
-          rawText: address,
         },
         ocrBack: {
-          rawText: address,
+          rawText: "",
         },
       })
     );
@@ -713,9 +603,9 @@ const AddUser: React.FC = () => {
           setSaving(false);
           toast.success("Documents updated successfully!");
           setHasChanges((prev) => ({ ...prev, documents: false }));
-          setTimeout(() => {
-            navigate("/user-management"); // Redirect to user list
-          }, 2000);
+          // setTimeout(() => {
+          //   navigate("/user-management"); // Redirect to user list
+          // }, 2000);
         },
         onError: (error: Error) => {
           setSaving(false);
@@ -1055,160 +945,15 @@ const AddUser: React.FC = () => {
             {error && (
               <div className="text-center text-red-500 mb-4">{error}</div>
             )}
-            {/* {!loading && ( */}
             <>
               {activeTab === 0 && (
-                <div>
-                  <div className="text-xl font-semibold mb-4">
-                    Personal Details
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <InputField
-                      label="Full Name"
-                      value={fullName}
-                      onChange={(e) => {
-                        setFullName(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      placeholder="Enter full name"
-                      required
-                    />
-                    <InputField
-                      label="Phone Number"
-                      value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      placeholder="Enter phone number"
-                      required
-                      disabled
-                    />
-                    <InputField
-                      label="Date Of Birth"
-                      value={dob}
-                      onChange={(e) => {
-                        setDob(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      type="date"
-                      required
-                    />
-                    <InputField
-                      label="Gender"
-                      value={gender}
-                      onChange={(e) => {
-                        setGender(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      type="select"
-                      options={[
-                        { label: "Male", value: "male" },
-                        { label: "Female", value: "female" },
-                      ]}
-                      required
-                    />
-                    <InputField
-                      label="Fathers Name"
-                      value={father}
-                      onChange={(e) => {
-                        setFather(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      placeholder="Enter father's name"
-                      required
-                    />
-                    <InputField
-                      label="City/District"
-                      value={city}
-                      onChange={(e) => {
-                        setCity(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      placeholder="Enter city/district"
-                      required
-                    />
-                    <InputField
-                      label="Address"
-                      value={address}
-                      onChange={(e) => {
-                        setAddress(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      type="textarea"
-                      placeholder="Enter address"
-                      className="md:col-span-3"
-                      required
-                    />
-                    <InputField
-                      label="PIN Code"
-                      value={pin}
-                      onChange={(e) => {
-                        setPin(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      placeholder="Enter PIN code"
-                      required
-                    />
-                    <InputField
-                      label="State"
-                      value={state}
-                      onChange={(e) => {
-                        setState(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      placeholder="Enter state"
-                      required
-                    />
-                    <InputField
-                      label="Business Partner"
-                      value={businessPartner}
-                      onChange={(e) => {
-                        setBusinessPartner(e.target.value);
-                        setHasChanges((prev) => ({
-                          ...prev,
-                          personal: true,
-                        }));
-                      }}
-                      type="select"
-                      options={[
-                        ...((businessPartnersData as any)?.data?.map((partner: any) => ({
-                          label: `${partner.name} (${partner.code})`,
-                          value: partner._id,
-                        })) || []),
-                      ]}
-                      disabled={loadingBusinessPartners}
-                    />
-                  </div>
-                  <ActionButtons onSave={handleSavePersonalInfo} />
-                </div>
+                <PersonalInformation
+                  userId={userId}
+                  userData={userData}
+                  onTabChange={setActiveTab}
+                  hasChanges={hasChanges}
+                  setHasChanges={setHasChanges}
+                />
               )}
               {activeTab === 1 && (
                 <div>
@@ -1985,9 +1730,8 @@ const AddUser: React.FC = () => {
                   />
                 </div>
               )}
-
               {activeTab === 3 && <VehicalDetails userId={userId} />}
-
+              {activeTab === 4 && <AssetDetails userId={userId} />}
               {activeTab === 5 && (
                 <div>
                   <div className="mb-4 md:mb-6 xl:mb-8 flex justify-between items-start">
@@ -2232,9 +1976,6 @@ const AddUser: React.FC = () => {
                   )}
                 </div>
               )}
-
-              {activeTab === 4 && <AssetDetails userId={userId} />}
-
             </>
             {/* )} */}
           </div>
@@ -2255,6 +1996,8 @@ const AddUser: React.FC = () => {
           />
         )}
       </Modal>
+
+
 
 
 

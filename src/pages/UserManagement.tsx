@@ -474,7 +474,7 @@ const UserManagement: React.FC = () => {
             );
           }
           // Show up to 2 assets inline, and a count if more
-          const top = assets.slice(0, 2);
+          const top = assets.slice(0, 3);
           return (
             <div className="flex flex-col gap-1">
               {top.map((a: any) => (
@@ -749,7 +749,7 @@ const UserManagement: React.FC = () => {
               actionButtonLabel="Assign Supervisor"
               onActionButtonClick={() => setShowAssignModal(true)}
               showSearch={true}
-              searchPlaceholder={activeTab === "supervisor" ? "Search supervisors by name, profile code, or phone" : "Search riders by name, profile code, or phone"}
+              searchPlaceholder={activeTab === "supervisor" ? "Search supervisors by name, profile code, or phone" : "Search riders by name, profile code, phone, or vehicle number"}
               searchValue={searchTerm}
               onSearchChange={setSearchTerm}
               searchButtonLabel="Search"

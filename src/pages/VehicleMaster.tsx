@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import ActionDropdown from '../components/ActionDropdown';
 import { useNavigate } from 'react-router-dom';
 import { useVehicleList, useAllVehicles, useMaintenanceVehicles, type VehiclePage } from '../hooks/useVehicles';
-import { useAssetList, useAssetStatistics, type AssetPage } from '../hooks/useAssets';
+import { useAssetList, useAssetStatistics as useUnifiedStatistics, type AssetPage } from '../hooks/useAssets';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import BulkQRCodeGenerator from '../components/BulkQRCodeGenerator';
 import { FiTruck, FiFileText, FiPackage, FiTool, FiAlertTriangle, FiUser, FiMapPin, FiCode, FiLoader } from 'react-icons/fi';
@@ -62,38 +62,38 @@ const VehicleMaster: React.FC = () => {
   const assets = (assetsPage as AssetPage | undefined)?.items ?? [];
   const assetsTotal = (assetsPage as AssetPage | undefined)?.total ?? 0;
 
-  // Asset statistics
-  const { data: assetStats } = useAssetStatistics();
+  // Unified statistics (vehicles + accessories) from /asset/statistics
+  const { data: stats } = useUnifiedStatistics();
   // const totalPages = (vehiclePage as VehiclePage | undefined)?.totalPages ?? 1;
 
   const summaryCards = [
     {
       label: 'Total Vehicles',
-      value: assetStats?.totalVehicles?.toString() || total.toString(),
+      value: (stats?.totalVehicles ?? 0).toString(),
       icon: <FiTruck className="w-6 h-6" />,
       link: 'View List',
     },
     {
       label: 'Vehicles Rented',
-      value: assetStats?.rentedVehicles?.toString() || '0',
+      value: (stats?.rentedVehicles ?? 0).toString(),
       icon: <FiFileText className="w-6 h-6" />,
       link: 'View all orders',
     },
     {
       label: 'Accessories',
-      value: assetStats?.total?.toString() || '0',
+      value: (stats?.total ?? 0).toString(),
       icon: <FiPackage className="w-6 h-6" />,
       link: 'View List',
     },
     {
       label: 'Rented Accessories',
-      value: assetStats?.assigned?.toString() || '0',
+      value: (stats?.assigned ?? 0).toString(),
       icon: <FiTool className="w-6 h-6" />,
       link: 'View List',
     },
     {
       label: 'Vehicles in Maintenance',
-      value: assetStats?.maintenanceVehicles?.toString() || '0',
+      value: (stats?.maintenanceVehicles ?? 0).toString(),
       icon: <FiTool className="w-6 h-6" />,
       link: 'View List',
     },
@@ -254,8 +254,9 @@ const VehicleMaster: React.FC = () => {
         const rider = value.rider;
         if (!rider) return <span className="text-gray-400">Unknown Rider</span>;
 
-        const name = rider?.accountRef?.name || rider.name || 'No Name';
-        const phone = rider?.accountRef?.identifier || rider.identifier || 'No Phone';
+        const name = rider?.accountRef?.name || rider?.name || 'No Name';
+        const phone = rider?.authRef?.identifier || rider?.accountRef?.identifier || rider?.identifier || 'No Phone';
+        const profileCode = rider?.profileCode || rider?.accountRef?.profileCode || '-';
         // const profileCode = rider?.profileCode || rider.profileCode || 'No Code';
 
         return (
@@ -264,6 +265,7 @@ const VehicleMaster: React.FC = () => {
             <div className="flex flex-col">
               <span className="text-sm font-medium text-gray-900">{name}</span>
               <span className="text-xs text-gray-500">{phone}</span>
+              <span className="text-xs text-gray-500">Code: {profileCode}</span>
             </div>
           </div>
         );
@@ -445,6 +447,29 @@ const VehicleMaster: React.FC = () => {
           {value === 'owned' ? 'Owned' : 'Rented'}
         </span>
       )
+    },
+    {
+      key: 'assignedTo',
+      title: 'Assigned To',
+      essential: true,
+      render: (value: any) => {
+        if (!value) return <span className="text-gray-400 italic">Not assigned</span>;
+        
+        const name = value.name || 'No Name';
+        const phone = value.authRef?.identifier || 'No Phone';
+        const profileCode = value.profileCode || '-';
+
+        return (
+          <div className="flex items-center gap-2">
+            <FiUser className="text-blue-600 w-4 h-4 mt-0.5 flex-shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900">{name}</span>
+              <span className="text-xs text-gray-500">{phone}</span>
+              <span className="text-xs text-gray-500">Code: {profileCode}</span>
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: 'actions',
@@ -721,6 +746,7 @@ const VehicleMaster: React.FC = () => {
     condition: asset.condition,
     serialNumber: asset.serialNumber,
     ownership: asset.ownership,
+    assignedTo: asset.assignedTo,
     image: asset.image,
     notes: asset.notes,
     addedBy: asset.addedBy,
@@ -752,7 +778,7 @@ const VehicleMaster: React.FC = () => {
               ) : (
                 <>
                   <FiCode className="w-4 h-4" />
-                  Import All Vehicle QR
+                  Import Vehicle QR
                 </>
               )}
             </Button>

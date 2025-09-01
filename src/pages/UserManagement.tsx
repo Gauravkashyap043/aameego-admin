@@ -463,6 +463,33 @@ const UserManagement: React.FC = () => {
         },
       },
       {
+        key: "assignedAssets",
+        title: "Assigned Assets",
+        essential: false,
+        render: (_value: any, record: any) => {
+          const assets = record.assignedAssets as any[] | undefined;
+          if (!assets || assets.length === 0) {
+            return (
+              <span className="text-gray-400 italic">No asset assigned</span>
+            );
+          }
+          // Show up to 2 assets inline, and a count if more
+          const top = assets.slice(0, 2);
+          return (
+            <div className="flex flex-col gap-1">
+              {top.map((a: any) => (
+                <div key={a._id} className="text-sm text-gray-700">
+                  {(a.assetType?.name || a.assetName || 'Asset')} {a.serialNumber ? `• ${a.serialNumber}` : ''}
+                </div>
+              ))}
+              {assets.length > 3 && (
+                <div className="text-xs text-gray-500">+{assets.length - 2} more</div>
+              )}
+            </div>
+          );
+        },
+      },
+      {
         key: "assignedSupervisor",
         title: "Assigned Supervisor",
         essential: true,
@@ -491,7 +518,7 @@ const UserManagement: React.FC = () => {
       {
         key: "businessPartner",
         title: "Business Partner",
-        essential: false,
+        essential: true,
         render: (_value: any, record: any) => {
           const businessPartner = record.businessPartnerRef;
           if (!businessPartner) {

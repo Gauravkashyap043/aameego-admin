@@ -173,7 +173,7 @@ const AddAsset: React.FC = () => {
             }
 
             // Navigate back to vehicle master
-            navigate('/vehicle-master');
+            navigate(-1);
 
         } catch (error) {
             console.log('Error saving asset:', error);
@@ -184,7 +184,7 @@ const AddAsset: React.FC = () => {
     };
 
     const handleCancel = () => {
-        navigate('/vehicle-master');
+        navigate(-1);
     };
 
     // Removed vehicle options as vehicle field is no longer part of assets
@@ -229,21 +229,19 @@ const AddAsset: React.FC = () => {
                     <div className="flex gap-2 mb-4">
                         <button
                             onClick={() => setActiveTab(0)}
-                            className={`px-4 py-2 rounded-t-lg text-sm font-medium focus:outline-none ${
-                                activeTab === 0
-                                    ? 'bg-white text-[#3B36FF] shadow border-b-2 border-[#3B36FF]'
-                                    : 'bg-transparent text-gray-500'
-                            }`}
+                            className={`px-4 py-2 rounded-t-lg text-sm font-medium focus:outline-none ${activeTab === 0
+                                ? 'bg-white text-[#3B36FF] shadow border-b-2 border-[#3B36FF]'
+                                : 'bg-transparent text-gray-500'
+                                }`}
                         >
                             Asset Details
                         </button>
                         <button
                             onClick={() => setActiveTab(1)}
-                            className={`px-4 py-2 rounded-t-lg text-sm font-medium focus:outline-none ${
-                                activeTab === 1
-                                    ? 'bg-white text-[#3B36FF] shadow border-b-2 border-[#3B36FF]'
-                                    : 'bg-transparent text-gray-500'
-                            }`}
+                            className={`px-4 py-2 rounded-t-lg text-sm font-medium focus:outline-none ${activeTab === 1
+                                ? 'bg-white text-[#3B36FF] shadow border-b-2 border-[#3B36FF]'
+                                : 'bg-transparent text-gray-500'
+                                }`}
                         >
                             Assignment History
                         </button>
@@ -255,125 +253,125 @@ const AddAsset: React.FC = () => {
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         {/* Form */}
                         <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Basic Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Asset Type <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={formData.assetType}
-                                    onChange={(e) => handleInputChange('assetType', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
-                                    required
-                                >
-                                    <option value="">Select Asset Type</option>
-                                    {assetTypesData?.map((type: any) => (
-                                        <option key={type._id} value={type._id}>
-                                            {type.name}
-                                        </option>
-                                    ))}
-                                </select>
+                            {/* Basic Information */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Asset Type <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.assetType}
+                                        onChange={(e) => handleInputChange('assetType', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
+                                        required
+                                    >
+                                        <option value="">Select Asset Type</option>
+                                        {assetTypesData?.map((type: any) => (
+                                            <option key={type._id} value={type._id}>
+                                                {type.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Asset Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.assetName}
+                                        onChange={(e) => handleInputChange('assetName', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
+                                        placeholder="Enter asset name (optional)"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Asset Vendor
+                                    </label>
+                                    <select
+                                        value={formData.assetVendor}
+                                        onChange={(e) => handleInputChange('assetVendor', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
+                                    >
+                                        <option value="">Select Vendor (Optional)</option>
+                                        {assetVendorsData?.map((vendor: any) => (
+                                            <option key={vendor._id} value={vendor._id}>
+                                                {vendor.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Ownership
+                                    </label>
+                                    <select
+                                        value={formData.ownership}
+                                        onChange={(e) => handleInputChange('ownership', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
+                                    >
+                                        <option value="owned">Owned</option>
+                                        <option value="rented">Rented</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Serial Number
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.serialNumber}
+                                        onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
+                                        placeholder="Enter serial number (optional)"
+                                    />
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Asset Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.assetName}
-                                    onChange={(e) => handleInputChange('assetName', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
-                                    placeholder="Enter asset name (optional)"
-                                />
+                            {/* Status and Condition */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Status
+                                    </label>
+                                    <select
+                                        value={formData.status}
+                                        onChange={(e) => handleInputChange('status', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
+                                    >
+                                        <option value="available">Available</option>
+                                        <option value="assigned">Assigned</option>
+                                        <option value="damaged">Damaged</option>
+                                        <option value="lost">Lost</option>
+                                        <option value="maintenance">Maintenance</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Condition
+                                    </label>
+                                    <select
+                                        value={formData.condition}
+                                        onChange={(e) => handleInputChange('condition', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
+                                    >
+                                        <option value="new">New</option>
+                                        <option value="good">Good</option>
+                                        <option value="fair">Fair</option>
+                                        <option value="poor">Poor</option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Asset Vendor
-                                </label>
-                                <select
-                                    value={formData.assetVendor}
-                                    onChange={(e) => handleInputChange('assetVendor', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
-                                >
-                                    <option value="">Select Vendor (Optional)</option>
-                                    {assetVendorsData?.map((vendor: any) => (
-                                        <option key={vendor._id} value={vendor._id}>
-                                            {vendor.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Ownership
-                                </label>
-                                <select
-                                    value={formData.ownership}
-                                    onChange={(e) => handleInputChange('ownership', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
-                                >
-                                    <option value="owned">Owned</option>
-                                    <option value="rented">Rented</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Serial Number
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.serialNumber}
-                                    onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
-                                    placeholder="Enter serial number (optional)"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Status and Condition */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Status
-                                </label>
-                                <select
-                                    value={formData.status}
-                                    onChange={(e) => handleInputChange('status', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
-                                >
-                                    <option value="available">Available</option>
-                                    <option value="assigned">Assigned</option>
-                                    <option value="damaged">Damaged</option>
-                                    <option value="lost">Lost</option>
-                                    <option value="maintenance">Maintenance</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Condition
-                                </label>
-                                <select
-                                    value={formData.condition}
-                                    onChange={(e) => handleInputChange('condition', e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
-                                >
-                                    <option value="new">New</option>
-                                    <option value="good">Good</option>
-                                    <option value="fair">Fair</option>
-                                    <option value="poor">Poor</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Assignment */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* <div>
+                            {/* Assignment */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Assigned To
                                 </label>
@@ -390,76 +388,76 @@ const AddAsset: React.FC = () => {
                                     ))}
                                 </select>
                             </div> */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Asset Image
-                                </label>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-4">
-                                        <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
-                                            <FiUpload className="w-4 h-4" />
-                                            <span>Upload Image</span>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleImageUpload}
-                                                className="hidden"
-                                            />
-                                        </label>
-                                        {selectedImageFile && (
-                                            <span className="text-sm text-gray-600">
-                                                {selectedImageFile.name} ({(selectedImageFile.size / 1024 / 1024).toFixed(2)} MB)
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {(imagePreview || formData.image) && (
-                                        <div className="flex items-center gap-3">
-                                            <img
-                                                src={imagePreview || formData.image}
-                                                alt="Asset preview"
-                                                className="w-20 h-20 object-cover rounded-md border shadow-sm"
-                                            />
-                                            <div className="flex flex-col gap-1">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Asset Image
+                                    </label>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-4">
+                                            <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <FiUpload className="w-4 h-4" />
+                                                <span>Upload Image</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                            {selectedImageFile && (
                                                 <span className="text-sm text-gray-600">
-                                                    {selectedImageFile ? selectedImageFile.name : 'Current image'}
+                                                    {selectedImageFile.name} ({(selectedImageFile.size / 1024 / 1024).toFixed(2)} MB)
                                                 </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleRemoveImage}
-                                                    className="text-red-500 hover:text-red-700 text-sm font-medium"
-                                                >
-                                                    Remove Image
-                                                </button>
-                                            </div>
+                                            )}
                                         </div>
-                                    )}
 
-                                    <p className="text-xs text-gray-500">
-                                        Supported formats: JPG, PNG. Max size: 5MB
-                                    </p>
+                                        {(imagePreview || formData.image) && (
+                                            <div className="flex items-center gap-3">
+                                                <img
+                                                    src={imagePreview || formData.image}
+                                                    alt="Asset preview"
+                                                    className="w-20 h-20 object-cover rounded-md border shadow-sm"
+                                                />
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm text-gray-600">
+                                                        {selectedImageFile ? selectedImageFile.name : 'Current image'}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveImage}
+                                                        className="text-red-500 hover:text-red-700 text-sm font-medium"
+                                                    >
+                                                        Remove Image
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <p className="text-xs text-gray-500">
+                                            Supported formats: JPG, PNG. Max size: 5MB
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Image Upload */}
+                            {/* Image Upload */}
 
 
-                        {/* Notes */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Notes
-                            </label>
-                            <textarea
-                                value={formData.notes}
-                                onChange={(e) => handleInputChange('notes', e.target.value)}
-                                rows={4}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
-                                placeholder="Enter any additional notes about the asset..."
-                            />
-                        </div>
-                    </form>
-                </div>
+                            {/* Notes */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Notes
+                                </label>
+                                <textarea
+                                    value={formData.notes}
+                                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                                    rows={4}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#3B36FF] focus:border-transparent"
+                                    placeholder="Enter any additional notes about the asset..."
+                                />
+                            </div>
+                        </form>
+                    </div>
                 ) : (
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         {/* Asset History */}
@@ -475,13 +473,12 @@ const AddAsset: React.FC = () => {
                                         <div key={assignment._id || index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                                        assignment.assignmentStatus === 'active' ? 'bg-blue-100' :
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${assignment.assignmentStatus === 'active' ? 'bg-blue-100' :
                                                         assignment.assignmentStatus === 'returned' ? 'bg-gray-100' :
-                                                        assignment.assignmentStatus === 'pending' ? 'bg-yellow-100' :
-                                                        assignment.assignmentStatus === 'approved' ? 'bg-green-100' :
-                                                        assignment.assignmentStatus === 'rejected' ? 'bg-red-100' : 'bg-gray-100'
-                                                    }`}>
+                                                            assignment.assignmentStatus === 'pending' ? 'bg-yellow-100' :
+                                                                assignment.assignmentStatus === 'approved' ? 'bg-green-100' :
+                                                                    assignment.assignmentStatus === 'rejected' ? 'bg-red-100' : 'bg-gray-100'
+                                                        }`}>
                                                         {assignment.assignmentStatus === 'active' ? (
                                                             <FiUser className="w-4 h-4 text-blue-600" />
                                                         ) : assignment.assignmentStatus === 'returned' ? (
@@ -499,10 +496,10 @@ const AddAsset: React.FC = () => {
                                                     <div>
                                                         <h4 className="font-medium text-gray-900 capitalize">
                                                             Asset {assignment.assignmentStatus === 'active' ? 'Assigned' :
-                                                                   assignment.assignmentStatus === 'returned' ? 'Returned' :
-                                                                   assignment.assignmentStatus === 'pending' ? 'Assignment Pending' :
-                                                                   assignment.assignmentStatus === 'approved' ? 'Assignment Approved' :
-                                                                   assignment.assignmentStatus === 'rejected' ? 'Assignment Rejected' : assignment.assignmentStatus}
+                                                                assignment.assignmentStatus === 'returned' ? 'Returned' :
+                                                                    assignment.assignmentStatus === 'pending' ? 'Assignment Pending' :
+                                                                        assignment.assignmentStatus === 'approved' ? 'Assignment Approved' :
+                                                                            assignment.assignmentStatus === 'rejected' ? 'Assignment Rejected' : assignment.assignmentStatus}
                                                         </h4>
                                                         <p className="text-sm text-gray-500">
                                                             {assignment.assignmentDate ? new Date(assignment.assignmentDate).toLocaleDateString('en-US', {
@@ -600,13 +597,12 @@ const AddAsset: React.FC = () => {
 
                                             {/* Status Badge */}
                                             <div className="mt-3">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    assignment.assignmentStatus === 'active' ? 'bg-blue-100 text-blue-800' :
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${assignment.assignmentStatus === 'active' ? 'bg-blue-100 text-blue-800' :
                                                     assignment.assignmentStatus === 'returned' ? 'bg-gray-100 text-gray-800' :
-                                                    assignment.assignmentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                    assignment.assignmentStatus === 'approved' ? 'bg-green-100 text-green-800' :
-                                                    assignment.assignmentStatus === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                                                }`}>
+                                                        assignment.assignmentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                            assignment.assignmentStatus === 'approved' ? 'bg-green-100 text-green-800' :
+                                                                assignment.assignmentStatus === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                                                    }`}>
                                                     {assignment.assignmentStatus.toUpperCase()}
                                                 </span>
                                             </div>

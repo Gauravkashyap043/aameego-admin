@@ -57,6 +57,7 @@ const VehicleMaster: React.FC = () => {
   // Assets data
   const { data: assetsPage, isLoading: loadingAssets } = useAssetList(page, limit, {
     status: activeTab === 3 ? 'assigned' : undefined, // "Accessories Rented" tab
+    search: activeTab === 2 ? submittedSearch : undefined, // "All Accessories" tab
   });
   const assets = (assetsPage as AssetPage | undefined)?.items ?? [];
   const assetsTotal = (assetsPage as AssetPage | undefined)?.total ?? 0;
@@ -132,6 +133,10 @@ const VehicleMaster: React.FC = () => {
     
     // Reset status filter when changing tabs
     setStatusFilter('');
+    
+    // Reset search when changing tabs
+    setSearch('');
+    setSubmittedSearch('');
   };
 
 
@@ -829,6 +834,8 @@ const VehicleMaster: React.FC = () => {
           </div>
         )}
 
+
+
         {/* Vehicle Table */}
         {(activeTab === 0 || activeTab === 1) && (
           <CollapsibleTable
@@ -905,7 +912,7 @@ const VehicleMaster: React.FC = () => {
             isLoading={loadingAssets}
             actionButtonLabel="+ New Accessories"
             onActionButtonClick={() => navigate('/add-asset')}
-            showSearch
+            showSearch={activeTab === 2 || activeTab === 3} // Show search for both "All Accessories" and "Accessories Rented" tabs
             searchValue={search}
             onSearchChange={(v) => {
               setSearch(v);

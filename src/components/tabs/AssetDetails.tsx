@@ -4,6 +4,7 @@ import AssetAssignmentModal from '../modals/AssetAssignmentModal';
 import Button from '../Button';
 import { toast } from 'react-toastify';
 import { FiPackage, FiUser, FiTruck, FiFileText, FiPlus, FiArrowRight, FiCheck, FiX, FiClock } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 
 interface AssetDetailsProps {
   userId: string;
@@ -21,7 +22,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
   // Separate active and inactive assignments
   const activeAssignments = assetAssignments?.filter((assignment: any) => assignment.isActive) || [];
   const inactiveAssignments = assetAssignments?.filter((assignment: any) => !assignment.isActive) || [];
-
+  const navigate = useNavigate()
   const handleAssignSuccess = () => {
     refetch();
     setShowAssignModal(false);
@@ -41,7 +42,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
           notes: returnData.notes || '',
         },
       });
-      
+
       toast.success('Asset returned successfully!');
       refetch();
       setShowReturnModal(false);
@@ -101,8 +102,8 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
             <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
               <FiPackage className="w-5 h-5 text-indigo-600" />
             </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900">
+            <div onClick={() => navigate(`/add-asset/${assignment.asset._id}`)}>
+              <h4 className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 hover:underline">
                 {assignment.asset?.assetName || 'Unknown Asset'}
               </h4>
               <p className="text-sm text-gray-500">
@@ -210,7 +211,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
               Return Asset
             </Button>
           )}
-          
+
           {isActive && assignment.assignmentStatus === 'pending' && (
             <div className="flex gap-2">
               <Button
@@ -250,14 +251,24 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Asset Assignments</h3>
           <p className="text-gray-600">Manage assets assigned to this user</p>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => setShowAssignModal(true)}
-          className="flex items-center gap-2"
-        >
-          <FiPlus className="w-4 h-4" />
-          Assign Asset
-        </Button>
+        <div className='flex justify-center items-center gap-2'>
+          <Button
+            variant="secondary"
+            onClick={() => navigate("/add-asset")}
+            className="flex items-center gap-2"
+          >
+            <FiPlus className="w-4 h-4" />
+            Add New Asset
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => setShowAssignModal(true)}
+            className="flex items-center gap-2"
+          >
+            <FiPlus className="w-4 h-4" />
+            Assign Asset
+          </Button>
+        </div>
       </div>
 
       {/* Asset Assignments List */}
@@ -338,7 +349,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
             <p className="text-gray-600 mb-4">
               Are you sure you want to return "{selectedAssignment.asset?.assetName}"?
             </p>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -351,7 +362,7 @@ const AssetDetails: React.FC<AssetDetailsProps> = ({ userId }) => {
                   id="returnCondition"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Notes (Optional)

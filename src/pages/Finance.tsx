@@ -1,14 +1,11 @@
 import React from 'react';
 import Layout from '../components/Layout';
-import ComingSoon from '../components/ComingSoon';
+// import ComingSoon from '../components/ComingSoon';
+import VehicleMaster from './VehicleMasterPage';
 
 const Finance: React.FC = () => (
   <Layout>
-    <ComingSoon 
-      title="Finance Dashboard Coming Soon" 
-      message="We're building a comprehensive finance dashboard to help you track payments, revenue, and financial metrics."
-      icon="alert"
-    />
+    <VehicleMaster/>
   </Layout>
 );
 

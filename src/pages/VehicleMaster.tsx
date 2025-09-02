@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import CollapsibleTable from '../components/CollapsibleTable';
 import type { CollapsibleColumn } from '../components/CollapsibleTable';
 import Button from '../components/Button';
-import ActionDropdown from '../components/ActionDropdown';
+import ActionDropdown from '../components/ActionDropdown';       
 import { useNavigate } from 'react-router-dom';
 import { useVehicleList, type VehiclePage } from '../hooks/useVehicles';
 import QRCodeGenerator from '../components/QRCodeGenerator';

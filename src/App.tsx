@@ -12,7 +12,7 @@ import AddUser from "./pages/AddUser";
 import './styles/App.css';
 import AddVehicle from "./pages/AddVehicle";
 import VehicleQR from "./pages/VehicleQR";
-import UserManagementPage from './pages/UserManagementPage';
+
 
 
 const isAuthenticated = () => !!localStorage.getItem('token');
@@ -37,7 +37,6 @@ function App() {
         <Route path="/add-vehicle" element={<PrivateRoute><AddVehicle /></PrivateRoute>} />
         <Route path="/add-vehicle/:id" element={<PrivateRoute><AddVehicle /></PrivateRoute>} />
         <Route path="/vehicle-qr/:vehicleNumber" element={<PrivateRoute><VehicleQR /></PrivateRoute>} />
-         <Route path="/users" element={<UserManagementPage />} />
       </Routes>
     </Router>
   );

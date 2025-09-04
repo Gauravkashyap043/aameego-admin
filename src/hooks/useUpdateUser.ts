@@ -135,7 +135,18 @@ export function useUploadProfilePicture() {
       });
       return response.data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      // Update the cache immediately with the new profile picture URL
+      queryClient.setQueryData(['user', variables.userId], (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            profilePicture: data.data.profilePictureUrl
+          };
+        }
+        return oldData;
+      });
+      
       // Invalidate and refetch user data
       queryClient.invalidateQueries({ queryKey: ['user', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['users'] });

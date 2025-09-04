@@ -13,6 +13,7 @@ import './styles/App.css';
 import AddVehicle from "./pages/AddVehicle";
 import VehicleQR from "./pages/VehicleQR";
 import AddAsset from "./pages/AddAsset";
+import VehicleTracking from "./pages/VehicleTracking";
 
 
 const isAuthenticated = () => !!localStorage.getItem('token');
@@ -39,6 +40,7 @@ function App() {
         <Route path="/add-asset" element={<PrivateRoute><AddAsset /></PrivateRoute>} />
         <Route path="/add-asset/:id" element={<PrivateRoute><AddAsset /></PrivateRoute>} />
         <Route path="/vehicle-qr/:vehicleNumber" element={<PrivateRoute><VehicleQR /></PrivateRoute>} />
+        <Route path="/vehicle-tracking/:vehicleId" element={<PrivateRoute><VehicleTracking /></PrivateRoute>} />
       </Routes>
     </Router>
   );

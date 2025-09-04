@@ -24,15 +24,17 @@ export const useVehicleList = (
   limit = 10,
   search?: string,
   rented?: string,
-  status?: string
+  status?: string,
+  documentFilter?: string
 ) => {
   return useQuery<VehiclePage>({
-    queryKey: ["vehicleList", page, limit, search ?? "", rented ?? "", status ?? ""],
+    queryKey: ["vehicleList", page, limit, search ?? "", rented ?? "", status ?? "", documentFilter ?? ""],
     queryFn: async () => {
       const params: any = { page, limit };
       if (search) params.search = search;
       if (rented) params.rented = rented;
       if (status) params.status = status;
+      if (documentFilter) params.documentFilter = documentFilter;
       const res = await api.get("/vehicle", { params });
       return res.data.data as VehiclePage;
     },

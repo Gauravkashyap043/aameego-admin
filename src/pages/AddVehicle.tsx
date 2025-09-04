@@ -114,6 +114,18 @@ const AddVehicle: React.FC = () => {
     invoice: null as any,
     insurance: null as any,
   });
+  const [previewModal, setPreviewModal] = useState<{
+    open: boolean;
+    file: any;
+    title: string;
+  } | null>(null);
+  const [imageZoom, setImageZoom] = useState({
+    scale: 1,
+    translateX: 0,
+    translateY: 0,
+    isDragging: false,
+    dragStart: { x: 0, y: 0 }
+  });
 
   const { data: cities = [] } = useCities();
   const { data: hubs = [] } = useHubs();
@@ -208,21 +220,132 @@ const AddVehicle: React.FC = () => {
     if (insuranceFiles.insurance) setInsuranceFilePreviews(prev => ({ ...prev, insurance: null }));
   }, [insuranceFiles.rc, insuranceFiles.fitnessCertificate, insuranceFiles.invoice, insuranceFiles.insurance]);
 
+  // Zoom functionality for images
+  const handleZoomIn = () => {
+    setImageZoom(prev => ({
+      ...prev,
+      scale: Math.min(prev.scale * 1.2, 5) // Max zoom 5x
+    }));
+  };
+
+  const handleZoomOut = () => {
+    setImageZoom(prev => ({
+      ...prev,
+      scale: Math.max(prev.scale / 1.2, 0.5) // Min zoom 0.5x
+    }));
+  };
+
+  const handleResetZoom = () => {
+    setImageZoom({
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
+      isDragging: false,
+      dragStart: { x: 0, y: 0 }
+    });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (imageZoom.scale > 1) {
+      setImageZoom(prev => ({
+        ...prev,
+        isDragging: true,
+        dragStart: { x: e.clientX - prev.translateX, y: e.clientY - prev.translateY }
+      }));
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (imageZoom.isDragging && imageZoom.scale > 1) {
+      setImageZoom(prev => ({
+        ...prev,
+        translateX: e.clientX - prev.dragStart.x,
+        translateY: e.clientY - prev.dragStart.y
+      }));
+    }
+  };
+
+  const handleMouseUp = () => {
+    setImageZoom(prev => ({ ...prev, isDragging: false }));
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setImageZoom(prev => ({
+      ...prev,
+      scale: Math.max(0.5, Math.min(5, prev.scale * delta))
+    }));
+  };
+
   // Helper for file preview
   const renderFilePreview = (file: any, label: string) => {
     if (!file) return null;
     const isPdf = file.url?.toLowerCase().endsWith('.pdf');
+    
+    const handlePreviewClick = () => {
+      setPreviewModal({
+        open: true,
+        file: file,
+        title: label
+      });
+      // Reset zoom when opening modal
+      setImageZoom({
+        scale: 1,
+        translateX: 0,
+        translateY: 0,
+        isDragging: false,
+        dragStart: { x: 0, y: 0 }
+      });
+    };
+
     return (
       <div className="flex items-center gap-2 mt-2">
         {isPdf ? (
           <>
             <span title="PDF"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#F87171" /><text x="6" y="17" fontSize="10" fill="#fff">PDF</text></svg></span>
-            <a href={file.url} download target="_blank" rel="noopener noreferrer" className="text-blue-600 underline cursor-pointer">Download PDF</a>
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handlePreviewClick();
+              }}
+              className="text-blue-600 underline cursor-pointer hover:text-blue-800"
+            >
+              Preview PDF
+            </button>
+            <span className="text-gray-400">|</span>
+            <a href={file.url} download target="_blank" rel="noopener noreferrer" className="text-green-600 underline cursor-pointer hover:text-green-800">Download</a>
           </>
         ) : (
           <div>
-            <img src={file.url} alt={label + ' Preview'} className="w-16 h-16 object-cover rounded border" />
-            <a href={file.url} download target="_blank" rel="noopener noreferrer" className="text-blue-600 underline cursor-pointer">Download</a>
+            <img 
+              src={file.url} 
+              alt={label + ' Preview'} 
+              className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handlePreviewClick();
+              }}
+              title="Click to preview"
+            />
+            <div className="mt-1">
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handlePreviewClick();
+                }}
+                className="text-blue-600 underline cursor-pointer hover:text-blue-800 text-xs"
+              >
+                Preview
+              </button>
+              <span className="text-gray-400 mx-1">|</span>
+              <a href={file.url} download target="_blank" rel="noopener noreferrer" className="text-green-600 underline cursor-pointer hover:text-green-800 text-xs">Download</a>
+            </div>
           </div>
         )}
         <span className="text-xs text-gray-500">{file.name}</span>
@@ -441,7 +564,7 @@ const AddVehicle: React.FC = () => {
         {activeTab === 1 && (
           <div className="bg-white rounded-xl shadow p-8">
             {/* Pass vehicleId to the insurance tab here as needed */}
-            <div>Vehicle ID for insurance: {vehicleId}</div>
+            {/* <div>Vehicle ID for insurance: {vehicleId}</div> */}
             {/* Insurance Details Section */}
             <form onSubmit={handleInsuranceSubmit} encType="multipart/form-data">
               <div className="mb-8">
@@ -553,6 +676,133 @@ const AddVehicle: React.FC = () => {
               isLoading={assignmentsLoading}
               vehicleNumber={form.vehicleNumber}
             />
+          </div>
+        )}
+
+        {/* Document Preview Modal */}
+        {previewModal?.open && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style={{backgroundColor: 'rgba(0, 0, 0, 0.5)'}}>
+            <div className="bg-white rounded-xl max-w-4xl max-h-[90vh] w-full overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {previewModal.title} Preview
+                </h3>
+                <div className="flex items-center gap-2">
+                  {/* Zoom controls for images */}
+                  {!previewModal.file?.url?.toLowerCase().endsWith('.pdf') && (
+                    <div className="flex items-center gap-1 mr-4">
+                      <button
+                        onClick={handleZoomOut}
+                        className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                        title="Zoom Out"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                        </svg>
+                      </button>
+                      <span className="text-sm text-gray-600 min-w-[60px] text-center">
+                        {Math.round(imageZoom.scale * 100)}%
+                      </span>
+                      <button
+                        onClick={handleZoomIn}
+                        className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                        title="Zoom In"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={handleResetZoom}
+                        className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                        title="Reset Zoom"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setPreviewModal(null)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div 
+                className="p-4 overflow-auto max-h-[calc(90vh-80px)]"
+                onWheel={handleWheel}
+                style={{ cursor: imageZoom.isDragging ? 'grabbing' : (imageZoom.scale > 1 ? 'grab' : 'default') }}
+              >
+                {previewModal.file?.url?.toLowerCase().endsWith('.pdf') ? (
+                  <div className="w-full h-[70vh]">
+                    <iframe
+                      src={previewModal.file.url}
+                      className="w-full h-full border-0 rounded-lg"
+                      title={`${previewModal.title} PDF Preview`}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex justify-center items-center min-h-[60vh]">
+                    <img
+                      src={previewModal.file.url}
+                      alt={`${previewModal.title} Preview`}
+                      className="rounded-lg shadow-lg transition-transform duration-200 ease-in-out select-none"
+                      style={{
+                        transform: `scale(${imageZoom.scale}) translate(${imageZoom.translateX}px, ${imageZoom.translateY}px)`,
+                        maxWidth: 'none',
+                        maxHeight: 'none',
+                        width: 'auto',
+                        height: 'auto'
+                      }}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                      draggable={false}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center p-4 border-t bg-gray-50">
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">File:</span> {previewModal.file.name}
+                  {previewModal.file.size && (
+                    <span className="ml-2">
+                      <span className="font-medium">Size:</span> {Math.round(previewModal.file.size / 1024)} KB
+                    </span>
+                  )}
+                  {!previewModal.file?.url?.toLowerCase().endsWith('.pdf') && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Use mouse wheel to zoom • Click and drag to pan when zoomed
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href={previewModal.file.url}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                  >
+                    Download
+                  </a>
+                  <button
+                    onClick={() => setPreviewModal(null)}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

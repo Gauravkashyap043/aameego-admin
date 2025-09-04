@@ -91,6 +91,9 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
           name: 'Profile Picture',
           size: 'N/A',
         });
+      } else {
+        // Clear preview if no profile picture or default
+        setProfilePicturePreview(null);
       }
     }
   }, [userData]);
@@ -161,18 +164,11 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
 
       try {
         // Upload the profile picture immediately
-        const result = await uploadProfilePicture.mutateAsync({
+        await uploadProfilePicture.mutateAsync({
           userId: String(userId),
           file: file,
         });
 
-        // Update the preview with the uploaded URL
-        setProfilePicturePreview({
-          url: result.data.profilePictureUrl,
-          name: file.name,
-          size: `${Math.round(file.size / 1024)} kb`,
-        });
-        
         toast.success("Profile picture uploaded successfully!");
         setHasChanges((prev) => ({ ...prev, personal: false }));
       } catch (error: any) {

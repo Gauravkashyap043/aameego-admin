@@ -24,6 +24,7 @@ const VehicleMaster: React.FC = () => {
   const [submittedSearch, setSubmittedSearch] = useState('');
   const [rentedFilter, setRentedFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [documentFilter, setDocumentFilter] = useState<string>('');
 
   // Determine the rented filter based on active tab
   const getRentedFilterForTab = () => {
@@ -33,7 +34,7 @@ const VehicleMaster: React.FC = () => {
     return rentedFilter; // Use manual filter for other tabs
   };
 
-  const { data: vehiclePage, isLoading: loadingVehicles } = useVehicleList(page, limit, submittedSearch, getRentedFilterForTab(), statusFilter);
+  const { data: vehiclePage, isLoading: loadingVehicles } = useVehicleList(page, limit, submittedSearch, getRentedFilterForTab(), statusFilter, documentFilter);
   const vehicles = (vehiclePage as VehiclePage | undefined)?.items ?? [];
   const total = (vehiclePage as VehiclePage | undefined)?.total ?? 0;
 
@@ -133,6 +134,9 @@ const VehicleMaster: React.FC = () => {
     
     // Reset status filter when changing tabs
     setStatusFilter('');
+    
+    // Reset document filter when changing tabs
+    setDocumentFilter('');
     
     // Reset search when changing tabs
     setSearch('');
@@ -267,6 +271,57 @@ const VehicleMaster: React.FC = () => {
               <span className="text-xs text-gray-500">{phone}</span>
               <span className="text-xs text-gray-500">Code: {profileCode}</span>
             </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'documents',
+      title: 'Documents',
+      essential: false,
+      render: (_value: any, record: any) => {
+        const insurance = record.insurance;
+        if (!insurance) {
+          return (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-400">No documents</span>
+            </div>
+          );
+        }
+
+        const hasRC = insurance.documents?.rc?.url;
+        const hasFitnessCertificate = insurance.documents?.fitnessCertificate?.url;
+        const hasInsuranceDoc = insurance.documents?.insurance?.url;
+
+        return (
+          <div className="flex items-center gap-1">
+            {hasRC && (
+              <span 
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-300 cursor-help"
+                title="Registration Certificate"
+              >
+                RC
+              </span>
+            )}
+            {hasFitnessCertificate && (
+              <span 
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300 cursor-help"
+                title="Fitness Certificate"
+              >
+                FC
+              </span>
+            )}
+            {hasInsuranceDoc && (
+              <span 
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 border border-purple-300 cursor-help"
+                title="Insurance Document"
+              >
+                INS
+              </span>
+            )}
+            {!hasRC && !hasFitnessCertificate && !hasInsuranceDoc && (
+              <span className="text-xs text-gray-400">No documents</span>
+            )}
           </div>
         );
       },
@@ -715,6 +770,7 @@ const VehicleMaster: React.FC = () => {
     invoiceAmount: v.invoiceAmount,
     deliveryDate: v.deliveryDate,
     currentAssignment: v.currentAssignment,
+    insurance: v.insurance,
   }));
 
   // Map maintenance vehicles to table data
@@ -855,6 +911,32 @@ const VehicleMaster: React.FC = () => {
                 <option value="assigned">Assigned</option>
                 <option value="maintenance">Maintenance</option>
                 <option value="damaged">Damaged</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Documents:</label>
+              <select
+                value={documentFilter}
+                onChange={(e) => {
+                  setDocumentFilter(e.target.value);
+                  setPage(1); // Reset to first page when filter changes
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              >
+                <option value="">All Vehicles</option>
+                <optgroup label="Has Documents">
+                  <option value="insurance">Has Insurance</option>
+                  <option value="rc">Has RC Document</option>
+                  <option value="fitnessCertificate">Has Fitness Certificate</option>
+                  <option value="allDocuments">Has All Documents</option>
+                </optgroup>
+                <optgroup label="Missing Documents">
+                  <option value="noDocuments">No Documents</option>
+                  <option value="noInsurance">Missing Insurance</option>
+                  <option value="noRC">Missing RC Document</option>
+                  <option value="noFitnessCertificate">Missing Fitness Certificate</option>
+                  <option value="missingAnyDocument">Missing Any Document</option>
+                </optgroup>
               </select>
             </div>
           </div>

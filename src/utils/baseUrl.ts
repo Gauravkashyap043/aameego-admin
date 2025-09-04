@@ -13,8 +13,9 @@ const getBaseUrl = () => {
     case "production":
       return "https://api.aameego.com/api/v1";
     case "development":
+      return "https://dev.aameego.com/api/v1";
     default:
-      return "http://localhost:9000/api/v1";
+      return "https://dev.aameego.com/api/v1";
   }
 };
 

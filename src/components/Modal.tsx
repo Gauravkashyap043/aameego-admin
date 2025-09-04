@@ -9,8 +9,20 @@ interface ModalProps {
 
 const Modal: React.FC<ModalProps> = ({ open, onClose, children, title }) => {
   if (!open) return null;
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      onClick={handleOverlayClick} 
+    >
       <div className="bg-white rounded-lg shadow-lg p-8 min-w-[340px] max-w-full relative">
         <button
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-2xl font-bold"
@@ -27,4 +39,4 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, children, title }) => {
   );
 };
 
-export default Modal; 
+export default Modal;

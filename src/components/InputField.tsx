@@ -3,7 +3,11 @@ import React from 'react';
 type InputFieldProps = {
   label: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => void;
   type?: 'text' | 'date' | 'select' | 'textarea';
   options?: { label: string; value: string }[]; // for select
   placeholder?: string;
@@ -13,6 +17,7 @@ type InputFieldProps = {
   disabled?: boolean;
   rows?: number; // for textarea
   className?: string;
+  list?: string; 
 };
 
 const InputField: React.FC<InputFieldProps> = ({
@@ -28,12 +33,21 @@ const InputField: React.FC<InputFieldProps> = ({
   disabled = false,
   rows = 3,
   className = '',
+  list, 
 }) => {
   return (
     <div style={{ marginBottom: 18, width: '100%' }} className={className}>
-      <label style={{ fontWeight: 500, marginBottom: 6, display: 'block', color: '#222' }}>
+      <label
+        style={{
+          fontWeight: 500,
+          marginBottom: 6,
+          display: 'block',
+          color: '#222',
+        }}
+      >
         {label} {required && <span style={{ color: 'red' }}>*</span>}
       </label>
+
       {type === 'select' ? (
         <select
           name={name}
@@ -50,8 +64,10 @@ const InputField: React.FC<InputFieldProps> = ({
           }}
         >
           <option value="">Select</option>
-          {options.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
           ))}
         </select>
       ) : type === 'textarea' ? (
@@ -80,6 +96,7 @@ const InputField: React.FC<InputFieldProps> = ({
           onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
+          list={list} 
           style={{
             width: '100%',
             padding: 10,
@@ -90,9 +107,14 @@ const InputField: React.FC<InputFieldProps> = ({
           }}
         />
       )}
-      {error && <div style={{ color: '#FF3B3B', fontSize: 13, marginTop: 4 }}>{error}</div>}
+
+      {error && (
+        <div style={{ color: '#FF3B3B', fontSize: 13, marginTop: 4 }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 };
 
-export default InputField; 
+export default InputField;

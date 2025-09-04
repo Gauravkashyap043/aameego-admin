@@ -27,6 +27,7 @@ import { useUnassignRiderByProfileCode, useUsersByRole } from "../hooks/useUsers
 import VehicalDetails from "../components/tabs/VehicalDetails";
 import AssetDetails from "../components/tabs/AssetDetails";
 import PersonalInformation from "../components/tabs/PersonalInformation";
+import BankInformation from "../components/tabs/BankInformation";
 
 const TABS = [
   "Personal information",
@@ -74,17 +75,18 @@ const AddUser: React.FC = () => {
   const [assignRiderLoading, setAssignRiderLoading] = useState(false);
 
   // Form fields
-  const [role, setRole] = useState("");
+  // const [role, setRole] = useState("");
   // Bank
-  const [bankName, setBankName] = useState("");
-  const [bankFullName, setBankFullName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
-  const [ifsc, setIfsc] = useState("");
+  // const [bankName, setBankName] = useState("");
+  // const [bankFullName, setBankFullName] = useState("");
+  // const [accountNumber, setAccountNumber] = useState("");
+  // const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
+  // const [ifsc, setIfsc] = useState("");
   // Documents
   const [aadhaarNumber, setAadhaarNumber] = useState("");
   const [panNumber, setPanNumber] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
+   const [role, setRole] = useState("");
 
   // Add state for document files and previews
   const [aadhaarFrontFile, setAadhaarFrontFile] = useState<File | null>(null);
@@ -99,10 +101,10 @@ const AddUser: React.FC = () => {
   const [licenseBackPreview, setLicenseBackPreview] = useState<any>(null);
 
   // Add state for bank document files and previews
-  const [passbookFile, setPassbookFile] = useState<File | null>(null);
-  const [passbookPreview, setPassbookPreview] = useState<any>(null);
-  const [chequeFile, setChequeFile] = useState<File | null>(null);
-  const [chequePreview, setChequePreview] = useState<any>(null);
+  // const [passbookFile, setPassbookFile] = useState<File | null>(null);
+  // const [passbookPreview, setPassbookPreview] = useState<any>(null);
+  // const [chequeFile, setChequeFile] = useState<File | null>(null);
+  // const [chequePreview, setChequePreview] = useState<any>(null);
 
   const [assignedUser, setAssignedUser] = useState([]);
 
@@ -121,8 +123,8 @@ const AddUser: React.FC = () => {
   const panInputRef = useRef<HTMLInputElement>(null);
   const licenseFrontInputRef = useRef<HTMLInputElement>(null);
   const licenseBackInputRef = useRef<HTMLInputElement>(null);
-  const passbookInputRef = useRef<HTMLInputElement>(null);
-  const chequeInputRef = useRef<HTMLInputElement>(null);
+  // const passbookInputRef = useRef<HTMLInputElement>(null);
+  // const chequeInputRef = useRef<HTMLInputElement>(null);
 
   // Track changes for each tab
   const [hasChanges, setHasChanges] = useState({
@@ -196,34 +198,34 @@ const AddUser: React.FC = () => {
 
 
 
-  const validateBankDetails = () => {
-    if (!bankName.trim()) {
-      setError("Bank name is required");
-      return false;
-    }
-    if (!bankFullName.trim()) {
-      setError("Account holder name is required");
-      return false;
-    }
-    if (!accountNumber.trim()) {
-      setError("Account number is required");
-      return false;
-    }
-    if (!confirmAccountNumber.trim()) {
-      setError("Confirm account number is required");
-      return false;
-    }
-    if (accountNumber !== confirmAccountNumber) {
-      setError("Account numbers do not match");
-      return false;
-    }
-    if (!ifsc.trim()) {
-      setError("IFSC code is required");
-      return false;
-    }
-    setError("");
-    return true;
-  };
+  // const validateBankDetails = () => {
+  //   if (!bankName.trim()) {
+  //     setError("Bank name is required");
+  //     return false;
+  //   }
+  //   if (!bankFullName.trim()) {
+  //     setError("Account holder name is required");
+  //     return false;
+  //   }
+  //   if (!accountNumber.trim()) {
+  //     setError("Account number is required");
+  //     return false;
+  //   }
+  //   if (!confirmAccountNumber.trim()) {
+  //     setError("Confirm account number is required");
+  //     return false;
+  //   }
+  //   if (accountNumber !== confirmAccountNumber) {
+  //     setError("Account numbers do not match");
+  //     return false;
+  //   }
+  //   if (!ifsc.trim()) {
+  //     setError("IFSC code is required");
+  //     return false;
+  //   }
+  //   setError("");
+  //   return true;
+  // };
 
   const validateDocuments = () => {
     if (!aadhaarNumber.trim()) {
@@ -243,13 +245,13 @@ const AddUser: React.FC = () => {
       setRole(userData?.role?.roleName);
       setAuthId(userData.authRef?._id || "");
       setAssignedUser(userData.assignedUser || []);
-      setBankName(userData.document?.bank?.details?.bankName || "");
-      setBankFullName(userData.document?.bank?.details?.holderName || "");
-      setAccountNumber(userData.document?.bank?.details?.accountNumber || "");
-      setConfirmAccountNumber(
-        userData.document?.bank?.details?.accountNumber || ""
-      );
-      setIfsc(userData.document?.bank?.details?.ifsc || "");
+      // setBankName(userData.document?.bank?.details?.bankName || "");
+      // setBankFullName(userData.document?.bank?.details?.holderName || "");
+      // setAccountNumber(userData.document?.bank?.details?.accountNumber || "");
+      // setConfirmAccountNumber(
+      //   userData.document?.bank?.details?.accountNumber || ""
+      // );
+      // setIfsc(userData.document?.bank?.details?.ifsc || "");
       setAadhaarNumber(
         userData.document?.aadhaar?.ocrFront?.aadharNumber || ""
       );
@@ -260,23 +262,23 @@ const AddUser: React.FC = () => {
       setPanPreview(userData.document?.pan?.file || null);
       setLicenseFrontPreview(userData.document?.dl?.frontFile || null);
       setLicenseBackPreview(userData.document?.dl?.backFile || null);
-      if (userData.document?.bank?.passbookUrl) {
-        setPassbookPreview({
-          url: userData.document.bank.passbookUrl,
-          name: "Passbook",
-          size: "N/A",
-        });
-      }
-      if (userData.document?.bank?.chequeUrl) {
-        setChequePreview({
-          url: userData.document.bank.chequeUrl,
-          name: "Cheque",
-          size: "N/A",
-        });
-      }
-      if (userData?.document?.documentRemarksRef) {
-        setRemarks(userData?.document?.documentRemarksRef.remarks);
-      }
+  //     if (userData.document?.bank?.passbookUrl) {
+  //       setPassbookPreview({
+  //         url: userData.document.bank.passbookUrl,
+  //         name: "Passbook",
+  //         size: "N/A",
+  //       });
+  //     }
+  //     if (userData.document?.bank?.chequeUrl) {
+  //       setChequePreview({
+  //         url: userData.document.bank.chequeUrl,
+  //         name: "Cheque",
+  //         size: "N/A",
+        // });
+  //     }
+  //     if (userData?.document?.documentRemarksRef) {
+  //       setRemarks(userData?.document?.documentRemarksRef.remarks);
+  //     }
     }
   }, [userData]);
 
@@ -421,106 +423,106 @@ const AddUser: React.FC = () => {
   };
 
   // Bank document file change handlers
-  const handlePassbookFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setPassbookFile(e.target.files[0]);
-      const file = e.target.files[0];
-      if (file.type.startsWith("image/")) {
-        setPassbookPreview({
-          url: URL.createObjectURL(file),
-          name: file.name,
-          size: `${Math.round(file.size / 1024)} kb`,
-        });
-      } else if (file.type === "application/pdf") {
-        setPassbookPreview({
-          url: URL.createObjectURL(file),
-          name: file.name,
-          size: `${Math.round(file.size / 1024)} kb`,
-          isPdf: true,
-        });
-      }
-      setHasChanges((prev) => ({ ...prev, bank: true }));
-    }
-  };
+  // const handlePassbookFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files && e.target.files[0]) {
+  //     setPassbookFile(e.target.files[0]);
+  //     const file = e.target.files[0];
+  //     if (file.type.startsWith("image/")) {
+  //       setPassbookPreview({
+  //         url: URL.createObjectURL(file),
+  //         name: file.name,
+  //         size: `${Math.round(file.size / 1024)} kb`,
+  //       });
+  //     } else if (file.type === "application/pdf") {
+  //       setPassbookPreview({
+  //         url: URL.createObjectURL(file),
+  //         name: file.name,
+  //         size: `${Math.round(file.size / 1024)} kb`,
+  //         isPdf: true,
+  //       });
+  //     }
+  //     setHasChanges((prev) => ({ ...prev, bank: true }));
+  //   }
+  // };
 
-  const handleChequeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setChequeFile(e.target.files[0]);
-      const file = e.target.files[0];
-      if (file.type.startsWith("image/")) {
-        setChequePreview({
-          url: URL.createObjectURL(file),
-          name: file.name,
-          size: `${Math.round(file.size / 1024)} kb`,
-        });
-      } else if (file.type === "application/pdf") {
-        setChequePreview({
-          url: URL.createObjectURL(file),
-          name: file.name,
-          size: `${Math.round(file.size / 1024)} kb`,
-          isPdf: true,
-        });
-      }
-      setHasChanges((prev) => ({ ...prev, bank: true }));
-    }
-  };
+  // const handleChequeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files && e.target.files[0]) {
+  //     setChequeFile(e.target.files[0]);
+  //     const file = e.target.files[0];
+  //     if (file.type.startsWith("image/")) {
+  //       setChequePreview({
+  //         url: URL.createObjectURL(file),
+  //         name: file.name,
+  //         size: `${Math.round(file.size / 1024)} kb`,
+  //       });
+  //     } else if (file.type === "application/pdf") {
+  //       setChequePreview({
+  //         url: URL.createObjectURL(file),
+  //         name: file.name,
+  //         size: `${Math.round(file.size / 1024)} kb`,
+  //         isPdf: true,
+  //       });
+  //     }
+  //     setHasChanges((prev) => ({ ...prev, bank: true }));
+  //   }
+  // };
 
 
 
-  // Save bank details
-  const handleSaveBankDetails = () => {
-    if (!userId) return;
+  // // Save bank details
+  // const handleSaveBankDetails = () => {
+  //   if (!userId) return;
 
-    if (!validateBankDetails()) {
-      return;
-    }
+  //   if (!validateBankDetails()) {
+  //     return;
+  //   }
 
-    setSaving(true);
+  //   setSaving(true);
 
-    const formData = new FormData();
+  //   const formData = new FormData();
 
-    const passbook = normalizeFile(passbookFile);
-    if (passbook) {
-      formData.append("passbook", passbook);
-    }
+  //   const passbook = normalizeFile(passbookFile);
+  //   if (passbook) {
+  //     formData.append("passbook", passbook);
+  //   }
 
-    const cheque = normalizeFile(chequeFile);
-    if (cheque) {
-      formData.append("cheque", cheque);
-    }
+  //   const cheque = normalizeFile(chequeFile);
+  //   if (cheque) {
+  //     formData.append("cheque", cheque);
+  //   }
 
-    formData.append(
-      "bank",
-      JSON.stringify({
-        details: {
-          bankName,
-          holderName: bankFullName,
-          accountNumber,
-          ifsc,
-        },
-      })
-    );
+  //   formData.append(
+  //     "bank",
+  //     JSON.stringify({
+  //       details: {
+  //         bankName,
+  //         holderName: bankFullName,
+  //         accountNumber,
+  //         ifsc,
+  //       },
+  //     })
+  //   );
 
-    formData.append("type", "bank");
+  //   formData.append("type", "bank");
 
-    updateDocument.mutate(
-      { userId: String(userId), formData },
-      {
-        onSuccess: () => {
-          setSaving(false);
-          toast.success("Bank details updated successfully!");
-          setHasChanges((prev) => ({ ...prev, bank: false }));
-          setTimeout(() => {
-            setActiveTab(2); // Move to next tab
-          }, 2000);
-        },
-        onError: (error: Error) => {
-          setSaving(false);
-          toast.error(`Failed to save bank details: ${error.message}`);
-        },
-      }
-    );
-  };
+  //   updateDocument.mutate(
+  //     { userId: String(userId), formData },
+  //     {
+  //       onSuccess: () => {
+  //         setSaving(false);
+  //         toast.success("Bank details updated successfully!");
+  //         setHasChanges((prev) => ({ ...prev, bank: false }));
+  //         setTimeout(() => {
+  //           setActiveTab(2); // Move to next tab
+  //         }, 2000);
+  //       },
+  //       onError: (error: Error) => {
+  //         setSaving(false);
+  //         toast.error(`Failed to save bank details: ${error.message}`);
+  //       },
+  //     }
+  //   );
+  // };
 
   // Save vehicle details
 
@@ -956,226 +958,14 @@ const AddUser: React.FC = () => {
                 />
               )}
               {activeTab === 1 && (
-                <div>
-                  <div className="text-xl font-semibold mb-4">Bank Details</div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <InputField
-                      label="Bank Name"
-                      value={bankName}
-                      onChange={(e) => {
-                        setBankName(e.target.value);
-                        setHasChanges((prev) => ({ ...prev, bank: true }));
-                      }}
-                      placeholder="Enter bank name"
-                      required
-                    />
-                    <InputField
-                      label="Full Name"
-                      value={bankFullName}
-                      onChange={(e) => {
-                        setBankFullName(e.target.value);
-                        setHasChanges((prev) => ({ ...prev, bank: true }));
-                      }}
-                      placeholder="Enter account holder name"
-                      required
-                    />
-                    <InputField
-                      label="Account Number"
-                      value={accountNumber}
-                      onChange={(e) => {
-                        setAccountNumber(e.target.value);
-                        setHasChanges((prev) => ({ ...prev, bank: true }));
-                      }}
-                      placeholder="Enter account number"
-                      required
-                    />
-                    <InputField
-                      label="Confirm Account Number"
-                      value={confirmAccountNumber}
-                      onChange={(e) => {
-                        setConfirmAccountNumber(e.target.value);
-                        setHasChanges((prev) => ({ ...prev, bank: true }));
-                      }}
-                      placeholder="Re-enter account number"
-                      required
-                    />
-                    <InputField
-                      label="IFSC Code"
-                      value={ifsc}
-                      onChange={(e) => {
-                        setIfsc(e.target.value);
-                        setHasChanges((prev) => ({ ...prev, bank: true }));
-                      }}
-                      placeholder="Enter IFSC code"
-                      required
-                    />
-                  </div>
-                  {/* Uploaded Documents */}
-                  <div className="mt-8">
-                    <div className="text-lg font-medium mb-2">
-                      Uploaded Documents
-                    </div>
-                    <div className="flex flex-wrap gap-4 mb-4">
-                      {/* Bank Passbook */}
-                      {passbookPreview && (
-                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                          <div className="flex items-center gap-2">
-                            <FiDownload className="text-red-500 text-2xl" />
-                            <span className="font-medium text-sm">
-                              Bank Passbook
-                            </span>
-                            <span className="ml-auto text-xs text-gray-400">
-                              {passbookPreview?.size || "N/A"}
-                            </span>
-                          </div>
-                          {passbookPreview && (
-                            <div className="flex flex-col items-center mt-2" onClick={() =>
-                              setPreviewModal({
-                                open: true,
-                                url: passbookPreview?.url,
-                                type: passbookPreview?.isPdf
-                                  ? "pdf"
-                                  : "image",
-                              })
-                            }>
-                              {passbookPreview.isPdf ? (
-                                <FiDownload className="text-red-500 text-4xl mb-1" />
-                              ) : (
-                                <img
-                                  src={passbookPreview.url}
-                                  alt="Passbook Preview"
-                                  className="w-16 h-16 object-cover rounded border mb-1"
-                                />
-                              )}
-                              <span className="text-xs text-gray-500">
-                                {passbookPreview.name}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex gap-2 mt-2">
-                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeletePassbook}><FiTrash2 /></button> */}
-                            <button
-                              className="text-blue-500 hover:text-blue-700"
-                              title="Download"
-                              onClick={() =>
-                                handleDownloadFile(
-                                  passbookPreview?.url || "",
-                                  passbookPreview?.name || "passbook.pdf"
-                                )
-                              }
-                            >
-                              <FiDownload />
-                            </button>
-                            <button
-                              className="text-gray-500 hover:text-gray-700"
-                              title="View"
-                              onClick={() =>
-                                setPreviewModal({
-                                  open: true,
-                                  url: passbookPreview?.url,
-                                  type: passbookPreview?.isPdf
-                                    ? "pdf"
-                                    : "image",
-                                })
-                              }
-                            >
-                              <FiEye />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      {/* Cancelled Cheque */}
-                      {chequePreview && (
-                        <div className="bg-white border rounded-xl p-4 w-60 flex flex-col gap-2 relative">
-                          <div className="flex items-center gap-2">
-                            <FiDownload className="text-red-500 text-2xl" />
-                            <span className="font-medium text-sm">
-                              Cancelled Cheque
-                            </span>
-                            <span className="ml-auto text-xs text-gray-400">
-                              {chequePreview?.size || "N/A"}
-                            </span>
-                          </div>
-                          {chequePreview && (
-                            <div className="flex flex-col items-center mt-2" onClick={() =>
-                              setPreviewModal({
-                                open: true,
-                                url: chequePreview?.url,
-                                type: chequePreview?.isPdf ? "pdf" : "image",
-                              })
-                            }>
-                              {chequePreview.isPdf ? (
-                                <FiDownload className="text-red-500 text-4xl mb-1" />
-                              ) : (
-                                <img
-                                  src={chequePreview.url}
-                                  alt="Cheque Preview"
-                                  className="w-16 h-16 object-cover rounded border mb-1"
-                                />
-                              )}
-                              <span className="text-xs text-gray-500">
-                                {chequePreview.name}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex gap-2 mt-2">
-                            {/* <button className="text-red-500 hover:text-red-700" title="Delete" onClick={handleDeleteCheque}><FiTrash2 /></button> */}
-                            <button
-                              className="text-blue-500 hover:text-blue-700"
-                              title="Download"
-                              onClick={() =>
-                                handleDownloadFile(
-                                  chequePreview?.url || "",
-                                  chequePreview?.name || "cheque.pdf"
-                                )
-                              }
-                            >
-                              <FiDownload />
-                            </button>
-                            <button
-                              className="text-gray-500 hover:text-gray-700"
-                              title="View"
-                              onClick={() =>
-                                setPreviewModal({
-                                  open: true,
-                                  url: chequePreview?.url,
-                                  type: chequePreview?.isPdf ? "pdf" : "image",
-                                })
-                              }
-                            >
-                              <FiEye />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className="mt-4 border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                      onClick={() => passbookInputRef.current?.click()}
-                    >
-                      <FiDownload className="mb-1" /> Upload Bank Passbook
-                      <input
-                        type="file"
-                        ref={passbookInputRef}
-                        className="hidden"
-                        onChange={handlePassbookFileChange}
-                      />
-                    </div>
-                    <div
-                      className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 cursor-pointer"
-                      onClick={() => chequeInputRef.current?.click()}
-                    >
-                      <FiDownload className="mb-1" /> Upload Cancelled Cheque
-                      <input
-                        type="file"
-                        ref={chequeInputRef}
-                        className="hidden"
-                        onChange={handleChequeFileChange}
-                      />
-                    </div>
-                  </div>
-                  <ActionButtons onSave={handleSaveBankDetails} />
-                </div>
+                <BankInformation
+                  userId={String(userId)}
+                  userData={userData}
+                  onTabChange={setActiveTab}
+                  hasChanges={hasChanges}
+                  setHasChanges={setHasChanges}
+                  onDeactivate={handleDeactivate}
+                />
               )}
               {activeTab === 2 && (
                 <div>

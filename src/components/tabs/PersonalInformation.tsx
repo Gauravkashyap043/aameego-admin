@@ -70,6 +70,20 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
     name: string;
   } | null>(null);
 
+  // States ka array banate hain (upar add karo, component ke andar ya bahar)
+  const indianStates = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+  "Chhattisgarh", "Goa", "Gujarat", "Haryana",
+  "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala",
+  "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+  "Mizoram", "Nagaland", "Odisha", "Punjab",
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
+  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Delhi", "Jammu and Kashmir", "Ladakh", "Puducherry"
+];
+
+
+
   // Initialize form data from userData
   useEffect(() => {
     if (userData) {
@@ -141,7 +155,7 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
   const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
+
       // Validate file type
       if (!file.type.startsWith("image/")) {
         toast.error("Please select an image file");
@@ -172,7 +186,7 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
           name: file.name,
           size: `${Math.round(file.size / 1024)} kb`,
         });
-        
+
         toast.success("Profile picture uploaded successfully!");
         setHasChanges((prev) => ({ ...prev, personal: false }));
       } catch (error: any) {
@@ -218,7 +232,7 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
       setSaving(false);
       toast.success("Personal information updated successfully!");
       setHasChanges((prev) => ({ ...prev, personal: false }));
-      
+
       setTimeout(() => {
         onTabChange(1); // Move to next tab
       }, 2000);
@@ -252,7 +266,7 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
       <div className="text-xl font-semibold mb-4">
         Personal Details
       </div>
-      
+
       {/* Profile Picture Section */}
       <div className="mb-6">
         <div className="text-base font-semibold mb-4">Profile Picture</div>
@@ -260,7 +274,7 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
           {/* Current Profile Picture */}
           <div className="flex flex-col items-center gap-2">
             <div className="relative">
-              <div 
+              <div
                 className={`w-24 h-24 rounded-full border-2 border-gray-300 overflow-hidden bg-gray-100 ${profilePicturePreview ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                 onClick={() => {
                   if (profilePicturePreview) {
@@ -443,7 +457,16 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
           }}
           placeholder="Enter state"
           required
+          list="state-options"  
         />
+
+
+        <datalist id="state-options">
+          {indianStates.map((st) => (
+            <option key={st} value={st} />
+          ))}
+        </datalist>
+
         <InputField
           label="Business Partner"
           value={businessPartner}
@@ -473,7 +496,7 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
 
       {/* Profile Picture Preview Modal */}
       <Modal
-        open={!!profilePictureModal?.open} 
+        open={!!profilePictureModal?.open}
         onClose={() => setProfilePictureModal(null)}
         title={`Profile Picture - ${profilePictureModal?.name || 'User'}`}
       >

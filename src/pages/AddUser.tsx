@@ -7,14 +7,14 @@ import api from "../services/api";
 import { FiDownload, FiEye, FiSearch, FiX } from "react-icons/fi";
 import Modal from "../components/Modal";
 import {
-  useUpdateUserPersonalDetails,
+  // useUpdateUserPersonalDetails,
   useUpdateDocument,
   useUpdateUserStatus,
-  useUploadProfilePicture,
+  // useUploadProfilePicture,
 } from "../hooks/useUpdateUser";
-import { useFetchBusinessPartners } from "../hooks/useFetchBusinessPartners";
+// import { useFetchBusinessPartners } from "../hooks/useFetchBusinessPartners";
 import { toast } from "react-toastify";
-import { formatDateForInput, formatDateForBackend } from "../utils/dateUtils";
+// import { formatDateForInput, formatDateForBackend } from "../utils/dateUtils";
 import { RejectUserModal } from "../components/modals/RejectModal";
 import { useCreateOrUpdateDocRemark } from "../hooks/useDocRemark";
 import type { Remark } from "../types";

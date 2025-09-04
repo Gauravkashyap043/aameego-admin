@@ -303,6 +303,80 @@ const VehicleTracking: React.FC = () => {
             vehbattery: (parseFloat(prev.data.vehbattery) - Math.random() * 0.1).toFixed(1)
           }
         }));
+        
+        // Update fuel data with slight variations
+        setLastFuelStatus(prev => ({
+          ...prev,
+          data: {
+            ...prev.data,
+            fuellevel: (parseFloat(prev.data.fuellevel) - Math.random() * 0.5).toFixed(1),
+            fuellevellitres: (parseFloat(prev.data.fuellevellitres) - Math.random() * 0.2).toFixed(1)
+          }
+        }));
+        
+        // Update fuel used data
+        setFuelUsed(prev => ({
+          ...prev,
+          data: {
+            ...prev.data,
+            fuelused: (parseFloat(prev.data.fuelused) + Math.random() * 0.1).toFixed(1)
+          }
+        }));
+        
+        // Update fuel history
+        setFuelHistory(prev => ({
+          ...prev,
+          data: prev.data.map(fuel => ({
+            ...fuel,
+            value: (parseFloat(fuel.value) - Math.random() * 0.3).toFixed(1)
+          }))
+        }));
+        
+        // Update CAN data with slight variations
+        setCanData(prev => ({
+          ...prev,
+          data: {
+            ...prev.data,
+            soc: {
+              ...prev.data.soc,
+              value: (parseInt(prev.data.soc.value) - Math.floor(Math.random() * 2)).toString()
+            },
+            battery_temp: {
+              ...prev.data.battery_temp,
+              value: (parseFloat(prev.data.battery_temp.value) + Math.random() * 2 - 1).toFixed(1)
+            },
+            battery_voltage: {
+              ...prev.data.battery_voltage,
+              value: (parseFloat(prev.data.battery_voltage.value) + Math.random() * 0.5 - 0.25).toFixed(1)
+            },
+            current: {
+              ...prev.data.current,
+              value: (parseFloat(prev.data.current.value) + Math.random() * 0.5 - 0.25).toFixed(1)
+            }
+          }
+        }));
+        
+        // Update battery history
+        setBatteryHistory(prev => ({
+          ...prev,
+          data: prev.data.map(battery => ({
+            ...battery,
+            soc: (parseInt(battery.soc) - Math.floor(Math.random() * 2)).toString(),
+            battery_temp: (parseFloat(battery.battery_temp) + Math.random() * 2 - 1).toFixed(1),
+            battery_voltage: (parseFloat(battery.battery_voltage) + Math.random() * 0.5 - 0.25).toFixed(1)
+          }))
+        }));
+        
+        // Update location history
+        setLocationHistory(prev => ({
+          ...prev,
+          data: prev.data.map(location => ({
+            ...location,
+            speed: Math.floor(Math.random() * 30 + 10).toString(),
+            heading: Math.floor(Math.random() * 360).toString(),
+            vehbattery: (parseFloat(location.vehbattery) - Math.random() * 0.1).toFixed(1)
+          }))
+        }));
       }, 5000); // Update every 5 seconds
     }
 
@@ -317,16 +391,16 @@ const VehicleTracking: React.FC = () => {
   };
 
   // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'SUCCESS':
-        return 'text-green-600 bg-green-100';
-      case 'FAILURE':
-        return 'text-red-600 bg-red-100';
-      default:
-        return 'text-gray-600 bg-gray-100';
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'SUCCESS':
+  //       return 'text-green-600 bg-green-100';
+  //     case 'FAILURE':
+  //       return 'text-red-600 bg-red-100';
+  //     default:
+  //       return 'text-gray-600 bg-gray-100';
+  //   }
+  // };
 
   // Get mobility status
   const getMobilityStatus = (mobili: string) => {
@@ -353,6 +427,25 @@ const VehicleTracking: React.FC = () => {
     setIsLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Update distance data with slight variations
+    setDistanceData(prev => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        distance: (parseFloat(prev.data.distance) + Math.random() * 2).toFixed(1)
+      }
+    }));
+    
+    // Update bulk distance data
+    setDistanceBulkData(prev => ({
+      ...prev,
+      data: prev.data.map(vehicle => ({
+        ...vehicle,
+        distance: (parseFloat(vehicle.distance) + Math.random() * 1).toFixed(1)
+      }))
+    }));
+    
     setLastUpdated(new Date());
     setIsLoading(false);
   };
@@ -854,6 +947,9 @@ const VehicleTracking: React.FC = () => {
                   <FiZap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">Fuel history chart would go here</p>
                   <p className="text-sm text-gray-400">Fuel level over time</p>
+                  <div className="mt-4 text-xs text-gray-400">
+                    <p>Recent fuel levels: {fuelHistory.data.slice(0, 3).map(f => `${f.value}%`).join(', ')}</p>
+                  </div>
                 </div>
               </div>
             </div>

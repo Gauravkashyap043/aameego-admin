@@ -34,7 +34,7 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
   userId,
   userData,
   onTabChange,
-  hasChanges,
+  // hasChanges,
   setHasChanges,
 }) => {
   const [saving, setSaving] = useState(false);
